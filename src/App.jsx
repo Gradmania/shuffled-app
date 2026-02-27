@@ -1,10 +1,72 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
 const SUITS = ['♠', '♥', '♦', '♣'];
 const SUIT_COLORS = { '♠': '#1a1a2e', '♥': '#be3455', '♦': '#be3455', '♣': '#1a1a2e' };
 const SUIT_ACCENTS = { '♠': '#a78bfa', '♥': '#fb7185', '♦': '#fbbf24', '♣': '#34d399' };
 const SUIT_GLOW = { '♠': 'rgba(167, 139, 250, 1)', '♥': 'rgba(251, 113, 133, 1)', '♦': 'rgba(251, 191, 36, 1)', '♣': 'rgba(52, 211, 153, 1)' };
 const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+
+// Match tier system — 13 named tiers + ???
+// Each match count gets its own tier. Names describe the phenomenon, not rarity.
+// Colours progress cool → warm → white-hot.
+const RARITY_TIERS = {
+  ghost:        { name: 'Ghost',        color: '#c4e0f9', glow: 'rgba(196, 224, 249, 0.4)' },
+  trace:        { name: 'Trace',        color: '#6b7280', glow: 'rgba(107, 114, 128, 0.4)' },
+  glimmer:      { name: 'Glimmer',      color: '#94a3b8', glow: 'rgba(148, 163, 184, 0.4)' },
+  echo:         { name: 'Echo',         color: '#6ee7b7', glow: 'rgba(110, 231, 183, 0.4)' },
+  signal:       { name: 'Signal',       color: '#2dd4bf', glow: 'rgba(45, 212, 191, 0.4)' },
+  resonance:    { name: 'Resonance',    color: '#a78bfa', glow: 'rgba(167, 139, 250, 0.4)' },
+  nova:         { name: 'Nova',         color: '#c084fc', glow: 'rgba(192, 132, 252, 0.4)' },
+  anomaly:      { name: 'Anomaly',      color: '#fb7185', glow: 'rgba(251, 113, 133, 0.4)' },
+  convergence:  { name: 'Convergence',  color: '#f9a8d4', glow: 'rgba(249, 168, 212, 0.4)' },
+  singularity:  { name: 'Singularity',  color: '#fbbf24', glow: 'rgba(251, 191, 36, 0.5)' },
+  contact:      { name: 'Contact',      color: '#fde68a', glow: 'rgba(253, 230, 138, 0.5)' },
+  entanglement: { name: 'Entanglement', color: '#fef3c7', glow: 'rgba(254, 243, 199, 0.5)' },
+  impossible:   { name: 'Impossible',   color: '#ffffff', glow: 'rgba(255, 255, 255, 0.5)', isGradient: true },
+  unknown:      { name: '???',          color: '#ffffff', glow: 'rgba(255, 255, 255, 0.6)', isGradient: true },
+};
+
+const getTierForMatch = (count) => {
+  const tiers = [
+    'ghost', 'trace', 'glimmer', 'echo', 'signal',
+    'resonance', 'nova', 'anomaly', 'convergence',
+    'singularity', 'contact', 'entanglement', 'impossible',
+  ];
+  if (count >= 13) return 'unknown';
+  return tiers[count] || 'ghost';
+};
+
+const getOddsForMatch = (count) => {
+  const odds = {
+    0: '1 in 3', 1: '1 in 3', 2: '1 in 5',
+    3: '1 in 16', 4: '1 in 65', 5: '1 in 326',
+    6: '1 in 1,960', 7: '1 in 13,700', 8: '1 in 110,000',
+    9: '1 in 1,000,000', 10: '1 in 10,000,000',
+    11: '1 in 100,000,000', 12: '1 in 1,000,000,000',
+  };
+  return odds[count] || 'Beyond comprehension';
+};
+
+const generateMatchPositions = (matchCount) => {
+  const positions = new Set();
+  while (positions.size < matchCount) {
+    positions.add(Math.floor(Math.random() * 52));
+  }
+  return positions;
+};
+
+// Finds are now detected server-side by finds-engine.js and returned in the API response.
+
+// Factory position labels — names for how many cards landed in their factory-order position
+const FACTORY_LABELS = {
+  0: { name: 'Blank Slate', desc: 'No cards remember home' },
+  1: { name: null, desc: null },
+  2: { name: 'Déjà Vu', desc: 'Two cards found their way back' },
+  3: { name: 'Homing', desc: 'Three cards returned' },
+  4: { name: 'Memory', desc: 'Four cards remember' },
+  5: { name: 'Recall', desc: 'Five cards home' },
+  6: { name: 'Factory Ghost', desc: 'The deck remembers' },
+};
 
 // Achievement definitions - now including poker hands
 const ACHIEVEMENTS = [
@@ -77,36 +139,152 @@ const generateHash = () => {
   return hash;
 };
 
-// Card component with flip animation
-const Card = ({ card, index, isRevealed, isShuffling }) => {
+// ============ STAR FIELD BACKGROUND ============
+// Generates a static star field to create depth in the background
+const StarField = () => {
+  const stars = useMemo(() => {
+    const result = [];
+    const count = 22;
+    
+    // Simple hash: takes a seed, returns 0–1 with no visible pattern
+    const hash = (n) => {
+      let x = Math.sin(n * 127.1 + 311.7) * 43758.5453;
+      return x - Math.floor(x);
+    };
+    
+    for (let i = 0; i < count; i++) {
+      result.push({
+        x: hash(i * 2) * 96 + 2,       // 2–98% (avoid edges)
+        y: hash(i * 2 + 1) * 96 + 2,
+        size: 1 + hash(i * 3) * 1.2,    // 1–2.2px
+        duration: 5 + hash(i * 7) * 7,  // 5–12s per cycle
+        delay: hash(i * 11) * 10,       // 0–10s stagger
+      });
+    }
+    return result;
+  }, []);
+
+  return (
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      overflow: 'hidden',
+      pointerEvents: 'none',
+      zIndex: 0,
+    }}>
+      {stars.map((star, i) => (
+        <div
+          key={i}
+          style={{
+            position: 'absolute',
+            left: `${star.x}%`,
+            top: `${star.y}%`,
+            width: `${star.size}px`,
+            height: `${star.size}px`,
+            borderRadius: '50%',
+            backgroundColor: '#ffffff',
+            animation: `twinkle ${star.duration}s ease-in-out ${star.delay}s infinite`,
+            pointerEvents: 'none',
+          }}
+        />
+      ))}
+    </div>
+  );
+};
+
+// ============ LOGO COMPONENT ============
+// Swap the text wordmark for an <img> when you have a designed logo.
+// Just replace the inner <span> with: <img src="/logo.svg" alt="Shuffled" style={{ height: s.logoHeight }} />
+const Logo = ({ size = 'large' }) => {
+  const sizes = {
+    header: { logoSize: '18px', letterSpacing: '3px', weight: '600', shadow: 'none' },
+    compact: { logoSize: '16px', letterSpacing: '3px', weight: '600', shadow: '0 2px 12px rgba(0,0,0,0.5)' },
+    medium: { logoSize: '42px', letterSpacing: '4px', weight: '300', shadow: '0 6px 40px rgba(0,0,0,0.7), 0 0 80px rgba(167, 139, 250, 0.12)' },
+    large: { logoSize: '56px', letterSpacing: '4px', weight: '300', shadow: '0 8px 50px rgba(0,0,0,0.8), 0 0 100px rgba(167, 139, 250, 0.15)' },
+  };
+  const s = sizes[size];
+  
+  return (
+    <span style={{
+      fontFamily: "'Cormorant Garamond', Georgia, serif",
+      fontSize: s.logoSize,
+      fontWeight: s.weight,
+      color: '#ffffff',
+      letterSpacing: s.letterSpacing,
+      textTransform: 'uppercase',
+      lineHeight: 1,
+      textShadow: s.shadow,
+    }}>
+      Shuffled
+    </span>
+  );
+};
+
+// Floating suit icons — atmospheric element, used on pre-shuffle screens
+const FloatingSuits = ({ size = 'large' }) => {
+  const sizeMap = { large: '36px', medium: '24px' };
+  const gapMap = { large: '12px', medium: '8px' };
+  const glowSize = size === 'large' ? '12px' : '10px';
+  
+  return (
+    <div style={{
+      display: 'flex',
+      justifyContent: 'center',
+      gap: gapMap[size],
+      fontSize: sizeMap[size],
+      position: 'relative',
+    }}>
+      {/* Elevation shadow beneath the floating suits */}
+      <div style={{
+        position: 'absolute',
+        bottom: size === 'large' ? '-18px' : '-12px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: size === 'large' ? '160px' : '100px',
+        height: size === 'large' ? '20px' : '14px',
+        background: 'radial-gradient(ellipse, rgba(0,0,0,0.6) 0%, transparent 70%)',
+        filter: 'blur(6px)',
+        pointerEvents: 'none',
+      }} />
+      {SUITS.map((suit, i) => (
+        <span 
+          key={suit} 
+          style={{ 
+            color: SUIT_ACCENTS[suit], 
+            filter: `drop-shadow(0 0 ${glowSize} ${SUIT_GLOW[suit]})`, 
+            animation: `float 3s ease-in-out ${i * 0.2}s infinite`,
+          }}
+        >
+          {suit}
+        </span>
+      ))}
+    </div>
+  );
+};
+
+// Card component with flip animation + highlight support for Finds
+const Card = ({ card, index, isRevealed, isShuffling, isHighlighted = false, isDimmed = false, isMatched = false, matchTier = null, matchGlowDelay = 0 }) => {
   const delay = index * 0.06;
   const flipDuration = 0.6;
   const suitDelay = delay + flipDuration + 0.15;
   const glowDelay = delay + flipDuration;
-  const pulseDelay = (index % 7) * 0.4;
   const rotationOffset = (index % 5) * 0.8;
   
+  // Match glow uses tier color, distinct from find highlight
+  const matchColor = matchTier ? RARITY_TIERS[matchTier]?.color || '#60a5fa' : '#60a5fa';
+  const matchGlow = matchTier ? RARITY_TIERS[matchTier]?.glow || 'rgba(96, 165, 250, 0.4)' : 'rgba(96, 165, 250, 0.4)';
+  
   return (
-    <div style={{ width: '54px', height: '76px', perspective: '1000px', position: 'relative' }}>
-      <div
-        style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          width: '70px',
-          height: '88px',
-          transform: 'translate(-50%, -50%)',
-          borderRadius: '12px',
-          background: card ? SUIT_GLOW[card.suit] : 'transparent',
-          opacity: isRevealed ? 0.25 : 0,
-          transition: `opacity 0.5s ease ${glowDelay}s`,
-          animation: isRevealed ? `haloGlow 3s ease-in-out ${glowDelay + pulseDelay}s infinite` : 'none',
-          filter: 'blur(10px)',
-          zIndex: 0,
-          pointerEvents: 'none',
-        }}
-      />
-      
+    <div style={{ 
+      width: '54px', 
+      height: '76px', 
+      perspective: '1000px', 
+      position: 'relative',
+      transition: 'transform 0.3s ease, opacity 0.3s ease',
+      transform: isHighlighted ? 'translateY(-8px) scale(1.08)' : 'translateY(0) scale(1)',
+      opacity: isDimmed ? 0.2 : 1,
+      zIndex: isHighlighted ? 10 : isMatched ? 5 : 1,
+    }}>
       <div
         style={{
           width: '100%',
@@ -174,6 +352,21 @@ const Card = ({ card, index, isRevealed, isShuffling }) => {
             }}
           />
           
+          {/* Highlight ring for finds */}
+          {isHighlighted && (
+            <div
+              style={{
+                position: 'absolute',
+                inset: '-4px',
+                borderRadius: '12px',
+                border: '2px solid #fff',
+                boxShadow: '0 0 20px rgba(255,255,255,0.6), 0 8px 32px rgba(0,0,0,0.4)',
+                zIndex: 2,
+                pointerEvents: 'none',
+              }}
+            />
+          )}
+          
           <div
             style={{
               position: 'relative',
@@ -188,7 +381,9 @@ const Card = ({ card, index, isRevealed, isShuffling }) => {
               fontFamily: "'Cormorant Garamond', Georgia, serif",
               fontWeight: '700',
               color: card ? SUIT_COLORS[card.suit] : '#1a1a2e',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              boxShadow: isHighlighted 
+                ? '0 8px 32px rgba(255,255,255,0.2)' 
+                : '0 4px 12px rgba(0,0,0,0.15)',
               zIndex: 1,
             }}
           >
@@ -202,6 +397,23 @@ const Card = ({ card, index, isRevealed, isShuffling }) => {
           </div>
         </div>
       </div>
+      
+      {/* Match glow — on outer wrapper, outside overflow:hidden */}
+      {isMatched && !isHighlighted && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: '-3px',
+            borderRadius: '11px',
+            border: `2px solid ${matchColor}`,
+            boxShadow: `0 0 12px ${matchGlow}, 0 0 24px ${matchGlow}`,
+            zIndex: 2,
+            pointerEvents: 'none',
+            opacity: 0,
+            animation: `fadeIn 0.6s ease ${matchGlowDelay}s forwards`,
+          }}
+        />
+      )}
     </div>
   );
 };
@@ -220,21 +432,12 @@ const Header = ({ isFirstTime, streak, showFull = true, onOpenProvenance }) => (
     background: 'linear-gradient(180deg, rgba(13,13,26,0.95) 0%, rgba(13,13,26,0) 100%)',
     zIndex: 50,
   }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-      <span style={{ fontSize: '20px' }}>🃏</span>
-      <span style={{
-        fontFamily: "'Cormorant Garamond', Georgia, serif",
-        fontSize: '18px',
-        fontWeight: '600',
-        color: 'rgba(255,255,255,0.8)',
-        letterSpacing: '2px',
-      }}>
-        DAILY SHUFFLE
-      </span>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', opacity: 0.8 }}>
+      <Logo size="header" />
     </div>
     
     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-      {/* How We Shuffle link */}
+      {/* How it works link */}
       <button
         onClick={onOpenProvenance}
         style={{
@@ -249,8 +452,7 @@ const Header = ({ isFirstTime, streak, showFull = true, onOpenProvenance }) => (
           gap: '4px',
         }}
       >
-        <span style={{ fontSize: '12px' }}>🔐</span>
-        How We Shuffle
+        How it works
       </button>
       
       {!isFirstTime && showFull && (
@@ -294,7 +496,7 @@ const Header = ({ isFirstTime, streak, showFull = true, onOpenProvenance }) => (
   </div>
 );
 
-// How We Shuffle / Provenance Panel
+// How It Works / Provenance Panel
 const ProvenancePanel = ({ isOpen, onClose, shuffleHash, dailySeed }) => {
   if (!isOpen) return null;
   
@@ -342,7 +544,7 @@ const ProvenancePanel = ({ isOpen, onClose, shuffleHash, dailySeed }) => {
               alignItems: 'center',
               gap: '12px',
             }}>
-              <span>🔐</span> How We Shuffle
+              <span>🔍</span> How It Works
             </h2>
             <p style={{
               fontSize: '13px',
@@ -905,31 +1107,40 @@ const AchievementsPanel = ({ isOpen, onClose }) => {
 
 // Stat Card Component
 const StatCard = ({ label, value, subtext, accentColor, icon }) => (
-  <div style={{
-    background: 'rgba(255, 255, 255, 0.03)',
-    backdropFilter: 'blur(10px)',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
-    borderRadius: '16px',
-    padding: '20px 24px',
-    textAlign: 'center',
-    minWidth: '150px',
-    position: 'relative',
-    overflow: 'hidden',
-  }}>
-    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: `linear-gradient(90deg, transparent, ${accentColor}, transparent)` }} />
-    {icon && <div style={{ fontSize: '20px', marginBottom: '8px' }}>{icon}</div>}
+  <div style={{ position: 'relative' }}>
+    {/* Shadow pool beneath card */}
     <div style={{
-      fontFamily: "'Cormorant Garamond', Georgia, serif",
-      fontSize: '32px',
-      fontWeight: '700',
-      color: accentColor,
-      marginBottom: '4px',
-      textShadow: `0 0 30px ${accentColor}40`,
+      position: 'absolute', bottom: '-8px', left: '50%', transform: 'translateX(-50%)',
+      width: '80%', height: '16px',
+      background: 'radial-gradient(ellipse, rgba(0,0,0,0.5) 0%, transparent 70%)',
+      filter: 'blur(8px)', pointerEvents: 'none',
+    }} />
+    <div style={{
+      background: 'rgba(255, 255, 255, 0.03)',
+      border: '1px solid rgba(255, 255, 255, 0.08)',
+      borderTop: '1px solid rgba(255,255,255,0.12)',
+      borderRadius: '16px',
+      padding: '20px 24px',
+      textAlign: 'center',
+      minWidth: '150px',
+      position: 'relative',
+      overflow: 'hidden',
     }}>
-      {value}
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: `linear-gradient(90deg, transparent, ${accentColor}, transparent)` }} />
+      {icon && <div style={{ fontSize: '20px', marginBottom: '8px' }}>{icon}</div>}
+      <div style={{
+        fontFamily: "'Cormorant Garamond', Georgia, serif",
+        fontSize: '32px',
+        fontWeight: '600',
+        color: accentColor,
+        marginBottom: '4px',
+        textShadow: `0 0 30px ${accentColor}40`,
+      }}>
+        {value}
+      </div>
+      <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px', color: 'rgba(255,255,255,0.5)', marginBottom: '2px' }}>{label}</div>
+      {subtext && <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '11px', color: 'rgba(255,255,255,0.3)' }}>{subtext}</div>}
     </div>
-    <div style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', color: 'rgba(255,255,255,0.5)', marginBottom: '2px' }}>{label}</div>
-    {subtext && <div style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: '10px', color: 'rgba(255,255,255,0.3)' }}>{subtext}</div>}
   </div>
 );
 
@@ -966,7 +1177,7 @@ const VerificationHash = ({ hash, isVisible }) => (
       border: '1px solid rgba(251, 191, 36, 0.2)',
       borderRadius: '20px',
     }}>
-      <span style={{ fontSize: '12px' }}>🔐</span>
+      <span style={{ fontSize: '12px' }}>🔒</span>
       <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)' }}>Verification:</span>
       <span style={{ fontSize: '11px', color: '#fbbf24', fontFamily: 'monospace' }}>
         {hash.substring(0, 8)}...{hash.substring(hash.length - 8)}
@@ -975,500 +1186,1314 @@ const VerificationHash = ({ hash, isVisible }) => (
   </div>
 );
 
-// ============ FIRST TIME VISITOR VIEW ============
-const FirstTimeView = ({ onShuffle, isShuffling, shuffleHash }) => (
-  <div style={{ textAlign: 'center', position: 'relative', zIndex: 1, maxWidth: '540px', padding: '0 20px' }}>
+// ============ MATCH GRID (52-position visualization) ============
+const MatchGrid = ({ matchCount, matchPositions }) => {
+  const tierKey = getTierForMatch(matchCount);
+  const tier = RARITY_TIERS[tierKey];
+  
+  return (
     <div style={{
-      display: 'flex',
-      justifyContent: 'center',
-      gap: '12px',
-      marginBottom: '32px',
-      fontSize: '36px',
+      display: 'grid',
+      gridTemplateColumns: 'repeat(13, 1fr)',
+      gridTemplateRows: 'repeat(4, 1fr)',
+      gap: '4px',
+      padding: '16px 14px',
+      background: 'rgba(0,0,0,0.3)',
+      borderRadius: '14px',
+      width: '100%',
+      maxWidth: '340px',
+      margin: '0 auto',
     }}>
-      {SUITS.map((suit, i) => (
-        <span key={suit} style={{ color: SUIT_ACCENTS[suit], filter: `drop-shadow(0 0 12px ${SUIT_GLOW[suit]})`, animation: `float 3s ease-in-out ${i * 0.2}s infinite` }}>{suit}</span>
-      ))}
+      {Array.from({ length: 52 }, (_, i) => {
+        const isMatch = matchPositions.has(i);
+        return (
+          <div
+            key={i}
+            style={{
+              width: '100%',
+              aspectRatio: '1',
+              borderRadius: '3px',
+              background: isMatch 
+                ? tier.isGradient 
+                  ? 'linear-gradient(135deg, #a78bfa, #fb7185, #fbbf24)'
+                  : tier.color
+                : 'rgba(255,255,255,0.08)',
+              boxShadow: isMatch ? `0 0 8px ${tier.glow}` : 'none',
+            }}
+          />
+        );
+      })}
     </div>
-    
-    <h1 style={{
-      fontFamily: "'Cormorant Garamond', Georgia, serif",
-      fontSize: '56px',
-      fontWeight: '300',
-      color: '#ffffff',
-      margin: '0 0 24px 0',
-      letterSpacing: '4px',
-      textTransform: 'uppercase',
-    }}>
-      Daily Shuffle
-    </h1>
-    
-    <div style={{
-      background: 'rgba(255,255,255,0.03)',
-      borderRadius: '16px',
-      padding: '24px',
-      marginBottom: '32px',
-      border: '1px solid rgba(255,255,255,0.06)',
-    }}>
-      <p style={{
-        fontSize: '18px',
-        color: 'rgba(255,255,255,0.7)',
-        margin: '0 0 16px 0',
-        fontFamily: "'Cormorant Garamond', Georgia, serif",
-        fontStyle: 'italic',
-        lineHeight: 1.6,
-      }}>
-        "There are more ways to arrange a deck of cards than there are atoms in our solar system."
-      </p>
-      
-      <p style={{
-        fontSize: '14px',
-        color: 'rgba(255,255,255,0.4)',
-        margin: 0,
-        lineHeight: 1.7,
-      }}>
-        This is a collective experiment. Every day, people around the world receive one cryptographically 
-        verified shuffle. We track them all, searching for the impossible: two shuffles that match.
-      </p>
-    </div>
+  );
+};
 
-    <VerificationHash hash={shuffleHash} isVisible={isShuffling} />
-
-    <button
-      onClick={onShuffle}
-      disabled={isShuffling}
-      style={{
-        fontFamily: "'Cormorant Garamond', Georgia, serif",
-        fontSize: '20px',
-        fontWeight: '600',
-        letterSpacing: '3px',
-        textTransform: 'uppercase',
-        padding: '22px 64px',
-        background: 'linear-gradient(135deg, rgba(167,139,250,0.3), rgba(251,113,133,0.3))',
-        border: '1px solid rgba(255,255,255,0.2)',
-        borderRadius: '50px',
-        color: '#fff',
-        cursor: 'pointer',
-        transition: 'all 0.4s ease',
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-    >
-      <ShimmerBar isActive={isShuffling} />
-      {isShuffling ? 'Generating verified shuffle...' : 'Join the Experiment'}
-    </button>
-    
-    <div style={{
-      marginTop: '32px',
+// ============ FIND BADGE (individual find in the finds bar) ============
+const FindBadge = ({ find, isActive, onHover, onLeave }) => (
+  <div
+    onMouseEnter={onHover}
+    onMouseLeave={onLeave}
+    style={{
+      position: 'relative',
       display: 'flex',
-      justifyContent: 'center',
-      gap: '24px',
-      fontSize: '12px',
-      color: 'rgba(255,255,255,0.3)',
-    }}>
-      <span>🌍 847,293 verified shuffles</span>
-      <span>•</span>
-      <span>🏆 Record: 9 positions matched</span>
+      alignItems: 'center',
+      gap: '8px',
+      padding: '10px 14px',
+      background: isActive 
+        ? `linear-gradient(135deg, ${find.color}30, ${find.color}15)`
+        : 'rgba(255,255,255,0.03)',
+      border: `1px solid ${isActive ? find.color : 'rgba(255,255,255,0.08)'}`,
+      borderRadius: '12px',
+      cursor: 'pointer',
+      transition: 'all 0.2s ease',
+      transform: isActive ? 'translateY(-2px)' : 'translateY(0)',
+      boxShadow: isActive ? `0 4px 16px ${find.color}30` : 'none',
+    }}
+  >
+    {find.isNew && (
+      <div style={{
+        position: 'absolute',
+        top: '-6px',
+        right: '-6px',
+        background: 'linear-gradient(135deg, #fbbf24, #f59e0b)',
+        color: '#000',
+        fontSize: '8px',
+        fontWeight: '700',
+        padding: '2px 6px',
+        borderRadius: '6px',
+        letterSpacing: '0.5px',
+        boxShadow: '0 2px 8px rgba(251, 191, 36, 0.4)',
+      }}>
+        NEW
+      </div>
+    )}
+    {!find.isNew && (
+      <div style={{
+        position: 'absolute',
+        top: '-4px',
+        right: '-4px',
+        width: '16px',
+        height: '16px',
+        background: 'rgba(52, 211, 153, 0.2)',
+        border: '1px solid rgba(52, 211, 153, 0.4)',
+        borderRadius: '50%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '10px',
+        color: '#34d399',
+      }}>
+        ✓
+      </div>
+    )}
+    <span style={{ fontSize: '18px' }}>{find.icon}</span>
+    <div>
+      <div style={{ fontSize: '13px', fontWeight: '600', color: isActive ? '#fff' : 'rgba(255,255,255,0.8)', lineHeight: 1.2 }}>
+        {find.name}
+      </div>
+      <div style={{ fontSize: '10px', color: isActive ? find.color : 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+        {find.rarity}
+      </div>
     </div>
   </div>
 );
 
-// ============ RETURNING USER VIEW ============
-const ReturningUserView = ({ onShuffle, isShuffling, streak, onOpenAchievements, shuffleHash }) => (
-  <div style={{ textAlign: 'center', position: 'relative', zIndex: 1, maxWidth: '700px' }}>
-    <div style={{
-      display: 'flex',
-      justifyContent: 'center',
-      gap: '8px',
-      marginBottom: '12px',
-      fontSize: '24px',
-    }}>
-      {SUITS.map((suit, i) => (
-        <span key={suit} style={{ color: SUIT_ACCENTS[suit], filter: `drop-shadow(0 0 10px ${SUIT_GLOW[suit]})`, animation: `float 3s ease-in-out ${i * 0.2}s infinite` }}>{suit}</span>
-      ))}
-    </div>
-    
-    <h1 style={{
-      fontFamily: "'Cormorant Garamond', Georgia, serif",
-      fontSize: '42px',
-      fontWeight: '300',
-      color: '#ffffff',
-      margin: '0 0 8px 0',
-      letterSpacing: '4px',
-      textTransform: 'uppercase',
-    }}>
-      Daily Shuffle
-    </h1>
-    
-    <p style={{
-      fontSize: '14px',
-      color: 'rgba(255,255,255,0.4)',
-      margin: '0 0 28px 0',
-      fontStyle: 'italic',
-    }}>
-      The experiment continues. Your verified shuffle awaits.
-    </p>
+// ============ FINDS BAR (horizontal row of find badges) ============
+// ============ FACTORY POSITION INDICATOR ============
+const FactoryIndicator = ({ count }) => {
+  if (count === null || count === undefined) return null;
+  const label = FACTORY_LABELS[count] || FACTORY_LABELS[6];
+  const isNotable = count >= 3;
+  const isSpecial = count >= 4;
+  const hasLabel = count >= 2 && label?.name;
+  const isBlankSlate = count === 0;
 
-    {/* Stats Row */}
+  const textColor = isSpecial
+    ? '#c4e0f9'
+    : isNotable
+      ? 'rgba(196, 224, 249, 0.75)'
+      : count >= 2
+        ? 'rgba(196, 224, 249, 0.55)'
+        : 'rgba(255,255,255,0.3)';
+
+  const bgOpacity = isSpecial ? 0.12 : isNotable ? 0.07 : 0.03;
+  const borderOpacity = isSpecial ? 0.25 : isNotable ? 0.15 : 0.06;
+  const glowAmount = isSpecial ? '0 0 16px rgba(196, 224, 249, 0.15)' : 'none';
+
+  return (
     <div style={{
       display: 'flex',
-      gap: '16px',
-      marginBottom: '28px',
-      flexWrap: 'wrap',
-      justifyContent: 'center',
+      alignItems: 'center',
+      gap: '8px',
+      padding: isNotable ? '8px 14px' : '8px 12px',
+      background: `rgba(196, 224, 249, ${bgOpacity})`,
+      border: `1px solid rgba(196, 224, 249, ${borderOpacity})`,
+      borderRadius: '12px',
+      transition: 'all 0.3s ease',
+      boxShadow: glowAmount,
+      position: 'relative',
     }}>
-      <StatCard 
-        icon="🏆"
-        label="All-Time Record" 
-        value="9" 
-        subtext="positions matched"
-        accentColor="#fbbf24" 
-      />
-      <StatCard 
-        icon="✨"
-        label="Today's Closest" 
-        value="6" 
-        subtext="2,847 shuffles so far"
-        accentColor="#34d399" 
-      />
-      <StatCard 
-        icon="🎯"
-        label="Your Best" 
-        value="5" 
-        subtext="positions matched"
-        accentColor="#a78bfa" 
-      />
+      {/* Frost shimmer for 4+ */}
+      {isSpecial && (
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          borderRadius: '12px',
+          background: 'linear-gradient(135deg, rgba(196,224,249,0.08) 0%, transparent 40%, rgba(196,224,249,0.05) 60%, transparent 100%)',
+          backgroundSize: '200% 200%',
+          animation: 'frostShimmer 4s ease infinite',
+          pointerEvents: 'none',
+        }} />
+      )}
+
+      <span style={{
+        fontSize: '14px',
+        opacity: count >= 2 ? 1 : 0.5,
+        filter: isSpecial ? 'drop-shadow(0 0 4px rgba(196, 224, 249, 0.5))' : 'none',
+      }}>
+        🏠
+      </span>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', position: 'relative' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+          <span style={{
+            fontFamily: "'Cormorant Garamond', Georgia, serif",
+            fontSize: isNotable ? '16px' : '14px',
+            fontWeight: '600',
+            color: textColor,
+            transition: 'all 0.3s ease',
+            textShadow: isSpecial ? '0 0 10px rgba(196, 224, 249, 0.3)' : 'none',
+          }}>
+            {count}
+          </span>
+          <span style={{
+            fontSize: '11px',
+            color: count >= 2 ? 'rgba(196, 224, 249, 0.35)' : 'rgba(255,255,255,0.2)',
+          }}>
+            {count === 1 ? 'card home' : 'cards home'}
+          </span>
+        </div>
+        {(hasLabel || isBlankSlate) && (
+          <span style={{
+            fontFamily: "'Cormorant Garamond', Georgia, serif",
+            fontSize: '10px',
+            fontStyle: 'italic',
+            color: isSpecial
+              ? 'rgba(196, 224, 249, 0.6)'
+              : isNotable
+                ? 'rgba(196, 224, 249, 0.4)'
+                : 'rgba(196, 224, 249, 0.3)',
+            letterSpacing: '0.3px',
+          }}>
+            {isBlankSlate ? 'Blank Slate' : label.name}
+          </span>
+        )}
+      </div>
     </div>
-    
-    {/* Achievements preview */}
-    <div 
-      onClick={onOpenAchievements}
-      style={{
-        background: 'rgba(255, 255, 255, 0.02)',
-        border: '1px solid rgba(255, 255, 255, 0.06)',
-        borderRadius: '16px',
-        padding: '16px 24px',
-        marginBottom: '28px',
-        cursor: 'pointer',
-        transition: 'all 0.3s ease',
+  );
+};
+
+const FindsBar = ({ finds, activeFind, setActiveFind, isVisible, onReplay, showReplayBtn, factoryCount }) => {
+  if (!finds || finds.length === 0) return null;
+  const newCount = finds.filter(f => f.isNew).length;
+  
+  return (
+    <div style={{ position: 'relative', marginBottom: '28px' }}>
+      {/* Shadow beneath */}
+      <div style={{
+        position: 'absolute', bottom: '-8px', left: '50%', transform: 'translateX(-50%)',
+        width: '70%', height: '16px',
+        background: 'radial-gradient(ellipse, rgba(0,0,0,0.4) 0%, transparent 70%)',
+        filter: 'blur(8px)', pointerEvents: 'none',
+      }} />
+      <div style={{
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between',
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <div style={{ display: 'flex', gap: '-8px' }}>
-          {ACHIEVEMENTS.filter(a => a.unlocked).slice(0, 5).map((a, i) => (
-            <div key={a.id} style={{ marginLeft: i > 0 ? '-8px' : 0, zIndex: 5 - i }}>
-              <AchievementBadge achievement={a} size="small" />
+        justifyContent: 'center',
+        gap: '12px',
+        padding: '16px 20px',
+        background: 'rgba(255,255,255,0.02)',
+        borderRadius: '16px',
+        border: '1px solid rgba(255,255,255,0.06)',
+        borderTop: '1px solid rgba(255,255,255,0.1)',
+        opacity: isVisible ? 1 : 0,
+        transform: isVisible ? 'translateY(0)' : 'translateY(10px)',
+        transition: 'all 0.5s ease',
+        flexWrap: 'wrap',
+        position: 'relative',
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          paddingRight: '12px',
+          borderRight: '1px solid rgba(255,255,255,0.1)',
+          marginRight: '4px',
+        }}>
+          <span style={{ fontSize: '16px' }}>✨</span>
+          <div>
+            <div style={{ fontSize: '12px', fontWeight: '600', color: 'rgba(255,255,255,0.6)', lineHeight: 1.2 }}>
+              {finds.length} Find{finds.length !== 1 ? 's' : ''}
             </div>
-          ))}
+            {newCount > 0 && (
+              <div style={{ fontSize: '10px', color: '#fbbf24' }}>{newCount} new!</div>
+            )}
+          </div>
         </div>
-        <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>
-          {ACHIEVEMENTS.filter(a => a.unlocked).length} of {ACHIEVEMENTS.length} achievements
-        </span>
+        {finds.map((find) => (
+          <FindBadge
+            key={find.id}
+            find={find}
+            isActive={activeFind === find.id}
+            onHover={() => setActiveFind(find.id)}
+            onLeave={() => setActiveFind(null)}
+          />
+        ))}
+        
+        {/* Divider before factory stat */}
+        {factoryCount !== null && factoryCount !== undefined && (
+          <>
+            <div style={{
+              width: '1px', height: '24px',
+              background: 'rgba(196, 224, 249, 0.12)',
+              marginLeft: '4px',
+            }} />
+            <FactoryIndicator count={factoryCount} />
+          </>
+        )}
+        
+        {/* Watch again button — fades in after a beat */}
+        {onReplay && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            opacity: showReplayBtn ? 1 : 0,
+            transform: showReplayBtn ? 'translateX(0)' : 'translateX(6px)',
+            transition: 'opacity 0.6s ease, transform 0.6s ease',
+            pointerEvents: showReplayBtn ? 'auto' : 'none',
+          }}>
+            <div style={{
+              width: '1px',
+              height: '24px',
+              background: 'rgba(255,255,255,0.1)',
+              marginLeft: '4px',
+            }} />
+            <button
+              onClick={onReplay}
+              style={{
+                background: 'rgba(167, 139, 250, 0.08)',
+                border: '1px solid rgba(167, 139, 250, 0.2)',
+                borderRadius: '50px',
+                padding: '6px 14px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.3s ease',
+                position: 'relative',
+                overflow: 'hidden',
+              }}
+              onMouseEnter={e => { 
+                e.currentTarget.style.background = 'rgba(167, 139, 250, 0.15)'; 
+                e.currentTarget.style.borderColor = 'rgba(167, 139, 250, 0.35)';
+                e.currentTarget.style.boxShadow = '0 0 12px rgba(167, 139, 250, 0.2)';
+              }}
+              onMouseLeave={e => { 
+                e.currentTarget.style.background = 'rgba(167, 139, 250, 0.08)'; 
+                e.currentTarget.style.borderColor = 'rgba(167, 139, 250, 0.2)';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            >
+              <span style={{ 
+                fontSize: '13px', 
+                color: '#a78bfa',
+                display: 'inline-block',
+              }}>↻</span>
+              <span style={{
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontSize: '12px',
+                fontStyle: 'italic',
+                color: '#a78bfa',
+                opacity: 0.8,
+              }}>
+                Watch again
+              </span>
+            </button>
+          </div>
+        )}
       </div>
-      <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)' }}>View all →</span>
+    </div>
+  );
+};
+
+// ============ FIRST TIME VISITOR VIEW ============
+const FirstTimeView = ({ onShuffle, isShuffling, shuffleHash }) => (
+  <div style={{ textAlign: 'center', position: 'relative', zIndex: 1, maxWidth: '520px', padding: '0 20px' }}>
+    <div style={{ marginBottom: '32px' }}>
+      <FloatingSuits size="large" />
+    </div>
+    
+    <h1 style={{ margin: '0 0 64px 0' }}>
+      <Logo size="large" />
+    </h1>
+    
+    {/* ---- BLOCK 1: The scale + the certainty ---- */}
+    <div style={{
+      position: 'relative',
+      marginBottom: '44px',
+      padding: '0 8px',
+    }}>
+      {/* Depth glow behind text block */}
+      <div style={{
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: '90%',
+        height: '160%',
+        background: 'radial-gradient(ellipse, rgba(167, 139, 250, 0.06) 0%, transparent 65%)',
+        pointerEvents: 'none',
+        filter: 'blur(30px)',
+      }} />
+      {/* Shadow beneath — implies elevation */}
+      <div style={{
+        position: 'absolute',
+        bottom: '-20px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: '70%',
+        height: '24px',
+        background: 'radial-gradient(ellipse, rgba(0,0,0,0.5) 0%, transparent 70%)',
+        filter: 'blur(10px)',
+        pointerEvents: 'none',
+      }} />
+      
+      <p style={{
+        fontFamily: "'Cormorant Garamond', Georgia, serif",
+        fontSize: '21px',
+        fontWeight: '300',
+        fontStyle: 'italic',
+        color: 'rgba(255,255,255,0.55)',
+        margin: 0,
+        lineHeight: 1.8,
+        position: 'relative',
+        textShadow: '0 4px 24px rgba(0,0,0,0.5)',
+      }}>
+        There are more ways to arrange a deck of cards than atoms in our solar system. No two true shuffles have ever been the same — and none ever will be.
+      </p>
+    </div>
+    
+    {/* ---- BLOCK 2: The hook + the mechanism ---- */}
+    <div style={{
+      marginBottom: '52px',
+      padding: '0 8px',
+    }}>
+      <p style={{
+        fontFamily: "'Cormorant Garamond', Georgia, serif",
+        fontSize: '24px',
+        fontWeight: '400',
+        fontStyle: 'italic',
+        color: 'rgba(255,255,255,0.8)',
+        margin: '0 0 16px 0',
+        lineHeight: 1.5,
+        textShadow: '0 2px 16px rgba(0,0,0,0.4)',
+      }}>
+        But how close can they get?
+      </p>
+      <p style={{
+        fontFamily: "'Cormorant Garamond', Georgia, serif",
+        fontSize: '16px',
+        fontWeight: '300',
+        color: 'rgba(255,255,255,0.35)',
+        margin: 0,
+        lineHeight: 1.6,
+      }}>
+        One shuffle per day. Compared against every shuffle before it.
+      </p>
     </div>
 
     <VerificationHash hash={shuffleHash} isVisible={isShuffling} />
 
-    <div>
+    {/* Premium CTA button with elevation */}
+    <div style={{ position: 'relative', display: 'inline-block' }}>
+      {/* Soft shadow pool beneath button */}
+      <div style={{
+        position: 'absolute',
+        bottom: '-12px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: '80%',
+        height: '24px',
+        background: 'radial-gradient(ellipse, rgba(0,0,0,0.6) 0%, transparent 70%)',
+        filter: 'blur(10px)',
+        pointerEvents: 'none',
+        transition: 'all 0.5s ease',
+      }} />
       <button
         onClick={onShuffle}
         disabled={isShuffling}
         style={{
           fontFamily: "'Cormorant Garamond', Georgia, serif",
           fontSize: '18px',
-          fontWeight: '600',
-          letterSpacing: '3px',
+          fontWeight: '400',
+          letterSpacing: '4px',
           textTransform: 'uppercase',
-          padding: '18px 56px',
-          background: 'linear-gradient(135deg, rgba(167,139,250,0.2), rgba(251,113,133,0.2))',
-          border: '1px solid rgba(255,255,255,0.2)',
+          padding: '20px 56px',
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.18)',
+          borderTop: '1px solid rgba(255,255,255,0.25)',
           borderRadius: '50px',
-          color: '#fff',
-          cursor: 'pointer',
-          transition: 'all 0.4s ease',
+          color: 'rgba(255,255,255,0.85)',
+          cursor: isShuffling ? 'default' : 'pointer',
+          transition: 'all 0.5s ease',
           position: 'relative',
           overflow: 'hidden',
+          boxShadow: '0 1px 0 0 rgba(255,255,255,0.1) inset, 0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.3)',
+        }}
+        onMouseEnter={(e) => { if (!isShuffling) { e.target.style.borderColor = 'rgba(255,255,255,0.4)'; e.target.style.borderTopColor = 'rgba(255,255,255,0.5)'; e.target.style.color = '#fff'; e.target.style.background = 'rgba(255,255,255,0.07)'; e.target.style.boxShadow = '0 1px 0 0 rgba(255,255,255,0.15) inset, 0 12px 40px rgba(0,0,0,0.5), 0 4px 12px rgba(0,0,0,0.4)'; }}}
+        onMouseLeave={(e) => { if (!isShuffling) { e.target.style.borderColor = 'rgba(255,255,255,0.18)'; e.target.style.borderTopColor = 'rgba(255,255,255,0.25)'; e.target.style.color = 'rgba(255,255,255,0.85)'; e.target.style.background = 'rgba(255,255,255,0.04)'; e.target.style.boxShadow = '0 1px 0 0 rgba(255,255,255,0.1) inset, 0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.3)'; }}}
+      >
+        {/* Light sweep on hover */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: '-100%',
+          width: '50%',
+          height: '100%',
+          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent)',
+          animation: 'none',
+          pointerEvents: 'none',
+        }} className="btn-sweep" />
+        <ShimmerBar isActive={isShuffling} />
+        {isShuffling ? 'Shuffling...' : 'Begin'}
+      </button>
+    </div>
+    
+    {/* Quiet footer context */}
+    <div style={{
+      marginTop: '48px',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+    }}>
+      <span style={{
+        fontFamily: "'Cormorant Garamond', Georgia, serif",
+        fontSize: '12px',
+        fontWeight: '300',
+        color: 'rgba(255,255,255,0.18)',
+        letterSpacing: '1.5px',
+      }}>
+        847,293 shuffles and counting
+      </span>
+    </div>
+  </div>
+);
+
+// ============ RETURNING USER VIEW ============
+const ReturningUserView = ({ onShuffle, isShuffling, streak, onOpenAchievements, shuffleHash }) => (
+  <div style={{ textAlign: 'center', position: 'relative', zIndex: 1, maxWidth: '700px', padding: '0 20px' }}>
+    <div style={{ marginBottom: '16px' }}>
+      <FloatingSuits size="medium" />
+    </div>
+    
+    <h1 style={{ margin: '0 0 12px 0' }}>
+      <Logo size="medium" />
+    </h1>
+    
+    {/* Tagline — Cormorant, with subtle glow */}
+    <div style={{ position: 'relative', marginBottom: '36px' }}>
+      <div style={{
+        position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+        width: '80%', height: '200%',
+        background: 'radial-gradient(ellipse, rgba(167, 139, 250, 0.04) 0%, transparent 65%)',
+        pointerEvents: 'none', filter: 'blur(20px)',
+      }} />
+      <p style={{
+        fontFamily: "'Cormorant Garamond', Georgia, serif",
+        fontSize: '17px',
+        fontWeight: '300',
+        fontStyle: 'italic',
+        color: 'rgba(255,255,255,0.4)',
+        margin: 0,
+        lineHeight: 1.5,
+        position: 'relative',
+        textShadow: '0 2px 12px rgba(0,0,0,0.4)',
+      }}>
+        Never twice. Surely. Your shuffle awaits.
+      </p>
+    </div>
+
+    {/* Stats Row — with glow behind cluster */}
+    <div style={{ position: 'relative', marginBottom: '28px' }}>
+      <div style={{
+        position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+        width: '100%', height: '180%',
+        background: 'radial-gradient(ellipse, rgba(167, 139, 250, 0.04) 0%, transparent 60%)',
+        pointerEvents: 'none', filter: 'blur(30px)',
+      }} />
+      <div style={{
+        display: 'flex',
+        gap: '16px',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        position: 'relative',
+      }}>
+        <StatCard 
+          icon="🏆"
+          label="Global Highest" 
+          value="9" 
+          subtext="positions matched"
+          accentColor="#fbbf24" 
+        />
+        <StatCard 
+          icon="✨"
+          label="Today's Highest" 
+          value="6" 
+          subtext="2,847 shuffles so far"
+          accentColor="#34d399" 
+        />
+        <StatCard 
+          icon="🎯"
+          label="Your Highest" 
+          value="5" 
+          subtext="positions matched"
+          accentColor="#a78bfa" 
+        />
+      </div>
+    </div>
+    
+    {/* Achievements preview — with shadow and brighter top border */}
+    <div style={{ position: 'relative', marginBottom: '28px' }}>
+      <div style={{
+        position: 'absolute', bottom: '-8px', left: '50%', transform: 'translateX(-50%)',
+        width: '70%', height: '16px',
+        background: 'radial-gradient(ellipse, rgba(0,0,0,0.4) 0%, transparent 70%)',
+        filter: 'blur(8px)', pointerEvents: 'none',
+      }} />
+      <div 
+        onClick={onOpenAchievements}
+        style={{
+          background: 'rgba(255, 255, 255, 0.02)',
+          border: '1px solid rgba(255, 255, 255, 0.06)',
+          borderTop: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: '16px',
+          padding: '16px 24px',
+          cursor: 'pointer',
+          transition: 'all 0.3s ease',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          position: 'relative',
         }}
       >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex' }}>
+            {ACHIEVEMENTS.filter(a => a.unlocked).slice(0, 5).map((a, i) => (
+              <div key={a.id} style={{ marginLeft: i > 0 ? '-8px' : 0, zIndex: 5 - i }}>
+                <AchievementBadge achievement={a} size="small" />
+              </div>
+            ))}
+          </div>
+          <span style={{
+            fontFamily: "'Cormorant Garamond', Georgia, serif",
+            fontSize: '13px',
+            color: 'rgba(255,255,255,0.5)',
+          }}>
+            {ACHIEVEMENTS.filter(a => a.unlocked).length} of {ACHIEVEMENTS.length} achievements
+          </span>
+        </div>
+        <span style={{
+          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          fontSize: '12px',
+          color: 'rgba(255,255,255,0.3)',
+        }}>View all →</span>
+      </div>
+    </div>
+
+    <VerificationHash hash={shuffleHash} isVisible={isShuffling} />
+
+    <div style={{ position: 'relative', display: 'inline-block' }}>
+      {/* Soft shadow pool beneath button */}
+      <div style={{
+        position: 'absolute',
+        bottom: '-12px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: '80%',
+        height: '24px',
+        background: 'radial-gradient(ellipse, rgba(0,0,0,0.6) 0%, transparent 70%)',
+        filter: 'blur(10px)',
+        pointerEvents: 'none',
+      }} />
+      <button
+        onClick={onShuffle}
+        disabled={isShuffling}
+        style={{
+          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          fontSize: '18px',
+          fontWeight: '400',
+          letterSpacing: '4px',
+          textTransform: 'uppercase',
+          padding: '18px 52px',
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.18)',
+          borderTop: '1px solid rgba(255,255,255,0.25)',
+          borderRadius: '50px',
+          color: 'rgba(255,255,255,0.85)',
+          cursor: isShuffling ? 'default' : 'pointer',
+          transition: 'all 0.5s ease',
+          position: 'relative',
+          overflow: 'hidden',
+          boxShadow: '0 1px 0 0 rgba(255,255,255,0.1) inset, 0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.3)',
+        }}
+        onMouseEnter={(e) => { if (!isShuffling) { e.target.style.borderColor = 'rgba(255,255,255,0.4)'; e.target.style.borderTopColor = 'rgba(255,255,255,0.5)'; e.target.style.color = '#fff'; e.target.style.background = 'rgba(255,255,255,0.07)'; e.target.style.boxShadow = '0 1px 0 0 rgba(255,255,255,0.15) inset, 0 12px 40px rgba(0,0,0,0.5), 0 4px 12px rgba(0,0,0,0.4)'; }}}
+        onMouseLeave={(e) => { if (!isShuffling) { e.target.style.borderColor = 'rgba(255,255,255,0.18)'; e.target.style.borderTopColor = 'rgba(255,255,255,0.25)'; e.target.style.color = 'rgba(255,255,255,0.85)'; e.target.style.background = 'rgba(255,255,255,0.04)'; e.target.style.boxShadow = '0 1px 0 0 rgba(255,255,255,0.1) inset, 0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.3)'; }}}
+      >
         <ShimmerBar isActive={isShuffling} />
-        {isShuffling ? 'Generating verified shuffle...' : "Reveal Today's Shuffle"}
+        {isShuffling ? 'Shuffling...' : "Today's Shuffle"}
       </button>
     </div>
   </div>
 );
 
-// ============ POST-SHUFFLE RESULT VIEW ============
-const PostShuffleResultView = ({ deck, matchCount, matchedWithShuffle, totalShuffles, isNewPersonalBest, isTodaysLeader, newAchievements, onOpenAchievements, shuffleHash, detectedHands }) => {
+// ============ POST-SHUFFLE RESULT VIEW (v4 design) ============
+const PostShuffleResultView = ({ deck, matchCount, matchedWithShuffle, matchedPositions: realMatchedPositions, totalShuffles, globalHighest, todayHighest, factoryCount, isNewPersonalBest, isTodaysLeader, newAchievements, onOpenAchievements, shuffleHash, detectedHands, finds }) => {
   const [isRevealed, setIsRevealed] = useState(false);
+  const [activeFind, setActiveFind] = useState(null);
+  const [showFinds, setShowFinds] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const [replayKey, setReplayKey] = useState(0);
+  const [showTicker, setShowTicker] = useState(false);
+  const [showReplayBtn, setShowReplayBtn] = useState(false);
+  const [liveCount, setLiveCount] = useState(4);
+  const [tickerFlash, setTickerFlash] = useState(false);
+  
+  // Simulate live shuffle count updates (replace with real WebSocket/polling later)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLiveCount(c => {
+        const delta = Math.random() > 0.5 ? 1 : (Math.random() > 0.5 ? 2 : 0);
+        return Math.max(1, c + delta - 1); // Fluctuate naturally
+      });
+      setTickerFlash(true);
+      setTimeout(() => setTickerFlash(false), 600);
+    }, 4000 + Math.random() * 3000);
+    return () => clearInterval(interval);
+  }, []);
+  
+  const tierKey = getTierForMatch(matchCount);
+  const tier = RARITY_TIERS[tierKey];
+  const odds = getOddsForMatch(matchCount);
+  
+  // Use real matched positions from the API, fall back to random if not available
+  const matchPositions = useMemo(() => {
+    if (realMatchedPositions && realMatchedPositions.length > 0) {
+      return new Set(realMatchedPositions);
+    }
+    return generateMatchPositions(matchCount);
+  }, [realMatchedPositions, matchCount]);
+  
+  // Get highlighted card positions based on active find
+  const highlightedPositions = useMemo(() => {
+    if (!activeFind) return new Set();
+    const find = finds.find(f => f.id === activeFind);
+    return find ? new Set(find.positions) : new Set();
+  }, [activeFind, finds]);
+  
+  // Finds now come from the API via props — real pattern detection!
   
   useEffect(() => {
     const timer = setTimeout(() => setIsRevealed(true), 100);
     return () => clearTimeout(timer);
   }, []);
   
+  // Staggered reveal timing
+  const cardRevealEnd = 52 * 0.06 + 0.6 + 0.5;
+  
+  // Match glow appears after all cards finish flipping
+  const matchGlowStart = cardRevealEnd + 0.5;
+  
+  useEffect(() => {
+    const findsTimer = setTimeout(() => setShowFinds(true), (cardRevealEnd + 0.3) * 1000);
+    const resultsTimer = setTimeout(() => setShowResults(true), (cardRevealEnd + 0.6) * 1000);
+    const replayBtnTimer = setTimeout(() => setShowReplayBtn(true), (cardRevealEnd + 0.3) * 1000 + 1000);
+    return () => {
+      clearTimeout(findsTimer);
+      clearTimeout(resultsTimer);
+      clearTimeout(replayBtnTimer);
+    };
+  }, []);
+  
+  // Replay handler — resets everything in one atomic render, then flips after a beat
+  const handleReplay = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // All five state changes batch into ONE React render:
+    // New grid mounts with cards face-down, finds/results/replay button hidden
+    setIsRevealed(false);
+    setShowFinds(false);
+    setShowResults(false);
+    setShowReplayBtn(false);
+    setReplayKey(k => k + 1);
+    // Brief pause with face-down cards visible, then start the reveal
+    setTimeout(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setIsRevealed(true);
+          setTimeout(() => setShowFinds(true), (cardRevealEnd + 0.3) * 1000);
+          setTimeout(() => setShowResults(true), (cardRevealEnd + 0.6) * 1000);
+          setTimeout(() => setShowReplayBtn(true), (cardRevealEnd + 0.3) * 1000 + 1000);
+        });
+      });
+    }, 350);
+  };
+  
+  // Simulated live ticker entries (hardcoded — real data comes from backend later)
+  const tickerEntries = useMemo(() => [
+    { city: 'Melbourne', matchCount: 4, timeAgo: '12s ago' },
+    { city: 'London', matchCount: 2, timeAgo: '34s ago' },
+    { city: 'São Paulo', matchCount: 5, timeAgo: '1m ago' },
+    { city: 'Tokyo', matchCount: 3, timeAgo: '2m ago' },
+    { city: 'New York', matchCount: 1, timeAgo: '3m ago' },
+  ], []);
+  
   return (
     <div style={{ textAlign: 'center', position: 'relative', zIndex: 1, width: '100%', maxWidth: '800px' }}>
-      {/* Compact Header */}
-      <div style={{ marginBottom: '20px' }}>
-        <h1 style={{
-          fontFamily: "'Cormorant Garamond', Georgia, serif",
-          fontSize: '24px',
-          fontWeight: '300',
-          color: 'rgba(255,255,255,0.6)',
-          margin: '0',
-          letterSpacing: '3px',
-          textTransform: 'uppercase',
-        }}>
-          Shuffle #{totalShuffles}
-        </h1>
-        <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', margin: '8px 0 0' }}>
-          Cryptographically verified • February 16, 2026
-        </p>
-        
-        {/* Verification hash */}
-        <div style={{
-          marginTop: '12px',
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '8px',
-          padding: '6px 14px',
-          background: 'rgba(52, 211, 153, 0.1)',
-          border: '1px solid rgba(52, 211, 153, 0.2)',
-          borderRadius: '20px',
-        }}>
-          <span style={{ fontSize: '10px', color: '#34d399' }}>✓ VERIFIED</span>
-          <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)', fontFamily: 'monospace' }}>
-            {shuffleHash.substring(0, 16)}...
-          </span>
-        </div>
+      
+      {/* Brand identity — compact on results screen */}
+      <div style={{ marginBottom: '16px', opacity: 0, animation: 'fadeIn 0.5s ease 0.1s forwards' }}>
+        <Logo size="compact" />
       </div>
-
-      {/* Card Grid */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(13, 54px)',
-        gap: '8px',
-        marginBottom: '28px',
-        justifyContent: 'center',
-        padding: '16px',
-        overflowX: 'auto',
-      }}>
-        {deck.map((card, index) => (
-          <Card key={index} card={card} index={index} isRevealed={isRevealed} isShuffling={false} />
-        ))}
-      </div>
-
-      {/* Detected Poker Hands */}
-      {detectedHands && detectedHands.length > 0 && (
+      
+      {/* Shuffle info header */}
+      <div style={{ marginBottom: '20px', opacity: 0, animation: 'fadeIn 0.5s ease 0.2s forwards' }}>
         <div style={{
-          background: 'rgba(167, 139, 250, 0.1)',
-          border: '1px solid rgba(167, 139, 250, 0.2)',
-          borderRadius: '16px',
-          padding: '16px 20px',
-          marginBottom: '24px',
-          animation: 'fadeInUp 0.6s ease 3.8s both',
-        }}>
-          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-            🃏 Poker Hands Detected
-          </div>
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-            {detectedHands.map((hand, i) => (
-              <span key={i} style={{
-                padding: '6px 12px',
-                background: 'rgba(167, 139, 250, 0.2)',
-                borderRadius: '8px',
-                fontSize: '13px',
-                color: '#a78bfa',
-              }}>
-                {hand}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* New Achievements Unlocked */}
-      {newAchievements && newAchievements.length > 0 && (
-        <div style={{
-          background: 'linear-gradient(135deg, rgba(167,139,250,0.15), rgba(251,113,133,0.15))',
-          border: '1px solid rgba(167,139,250,0.3)',
-          borderRadius: '16px',
-          padding: '20px',
-          marginBottom: '24px',
-          animation: 'fadeInUp 0.6s ease 4s both',
-        }}>
-          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '2px' }}>
-            🎉 New Achievement{newAchievements.length > 1 ? 's' : ''} Unlocked!
-          </div>
-          <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
-            {newAchievements.map(a => (
-              <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <AchievementBadge achievement={{...a, unlocked: true}} size="small" />
-                <span style={{ color: '#fff', fontSize: '14px', fontWeight: '500' }}>{a.name}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Result Panel */}
-      <div style={{
-        background: 'rgba(255, 255, 255, 0.03)',
-        backdropFilter: 'blur(20px)',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
-        borderRadius: '24px',
-        padding: '32px 48px',
-        maxWidth: '500px',
-        margin: '0 auto 24px',
-        position: 'relative',
-        overflow: 'hidden',
-        animation: 'fadeInUp 0.6s ease 4.5s both',
-      }}>
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: 'linear-gradient(90deg, #a78bfa, #fb7185, #fbbf24, #34d399)' }} />
-        
-        {(isNewPersonalBest || isTodaysLeader) && (
-          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '16px', flexWrap: 'wrap' }}>
-            {isNewPersonalBest && (
-              <span style={{
-                background: 'linear-gradient(135deg, rgba(167,139,250,0.3), rgba(167,139,250,0.1))',
-                border: '1px solid rgba(167,139,250,0.4)',
-                borderRadius: '20px',
-                padding: '6px 14px',
-                fontSize: '11px',
-                color: '#a78bfa',
-                fontWeight: '600',
-                letterSpacing: '1px',
-                textTransform: 'uppercase',
-              }}>
-                🎉 New Personal Best!
-              </span>
-            )}
-            {isTodaysLeader && (
-              <span style={{
-                background: 'linear-gradient(135deg, rgba(251,191,36,0.3), rgba(251,191,36,0.1))',
-                border: '1px solid rgba(251,191,36,0.4)',
-                borderRadius: '20px',
-                padding: '6px 14px',
-                fontSize: '11px',
-                color: '#fbbf24',
-                fontWeight: '600',
-                letterSpacing: '1px',
-                textTransform: 'uppercase',
-              }}>
-                👑 Today's Leader!
-              </span>
-            )}
-          </div>
-        )}
-
-        <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '2px' }}>
-          Closest Match in the Experiment
-        </div>
-        
-        <div style={{
-          fontFamily: "'Cormorant Garamond', Georgia, serif",
-          fontSize: '72px',
-          fontWeight: '300',
-          background: 'linear-gradient(135deg, #a78bfa, #fb7185)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          marginBottom: '4px',
-          lineHeight: 1,
-        }}>
-          {matchCount}
-        </div>
-        
-        <div style={{ fontSize: '16px', color: 'rgba(255,255,255,0.6)', marginBottom: '20px', letterSpacing: '1px' }}>
-          positions matched
-        </div>
-        
-        <div style={{
-          fontSize: '13px',
+          fontSize: '12px',
           color: 'rgba(255,255,255,0.4)',
-          paddingTop: '16px',
-          borderTop: '1px solid rgba(255,255,255,0.08)',
+          letterSpacing: '2px',
+          textTransform: 'uppercase',
+          marginBottom: '4px',
         }}>
-          Closest match: shuffle <span style={{ color: '#a78bfa' }}>#{matchedWithShuffle}</span>
+          Shuffle #{totalShuffles ? totalShuffles.toLocaleString() : '—'}
+        </div>
+        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)' }}>
+          {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
         </div>
       </div>
 
-      {/* Comparison Stats */}
-      <div style={{
-        display: 'flex',
-        gap: '24px',
-        justifyContent: 'center',
-        marginBottom: '28px',
-        flexWrap: 'wrap',
-        animation: 'fadeInUp 0.6s ease 4.8s both',
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '1px' }}>Your Best</div>
-          <div style={{ fontSize: '24px', fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#a78bfa' }}>{matchCount}</div>
-        </div>
-        <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)' }} />
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '1px' }}>Today's Best</div>
-          <div style={{ fontSize: '24px', fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#34d399' }}>{matchCount}</div>
-        </div>
-        <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)' }} />
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '1px' }}>All-Time Record</div>
-          <div style={{ fontSize: '24px', fontFamily: "'Cormorant Garamond', Georgia, serif", color: '#fbbf24' }}>9</div>
-        </div>
-      </div>
-
-      {/* Streak & Actions */}
-      <div style={{
-        display: 'flex',
-        gap: '12px',
-        justifyContent: 'center',
-        flexWrap: 'wrap',
-        animation: 'fadeInUp 0.6s ease 5s both',
-      }}>
+      {/* Card Grid — wrapped with key for clean replay */}
+      <div key={replayKey}>
         <div style={{
-          background: 'rgba(251, 113, 133, 0.1)',
-          border: '1px solid rgba(251, 113, 133, 0.2)',
-          borderRadius: '12px',
-          padding: '14px 20px',
-          display: 'flex',
-          alignItems: 'center',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(13, 54px)',
           gap: '8px',
+          marginBottom: '24px',
+          justifyContent: 'center',
+          padding: '16px 24px',
+          overflow: 'visible',
         }}>
-          <span style={{ fontSize: '16px' }}>🔥</span>
-          <span style={{ fontSize: '14px', color: '#fb7185', fontWeight: '600' }}>13 day streak!</span>
+          {deck.map((card, index) => (
+            <Card 
+              key={index} 
+              card={card} 
+              index={index} 
+              isRevealed={isRevealed} 
+              isShuffling={false}
+              isHighlighted={highlightedPositions.has(index)}
+              isDimmed={activeFind !== null && !highlightedPositions.has(index)}
+              isMatched={matchPositions.has(index)}
+              matchTier={tierKey}
+              matchGlowDelay={matchGlowStart}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Finds Bar — includes replay button */}
+      <FindsBar 
+        finds={finds}
+        activeFind={activeFind}
+        setActiveFind={setActiveFind}
+        isVisible={showFinds}
+        onReplay={handleReplay}
+        showReplayBtn={showReplayBtn}
+        factoryCount={factoryCount}
+      />
+
+      {/* ============ MAIN RESULT PANEL ============ */}
+      <div style={{
+        opacity: showResults ? 1 : 0,
+        transform: showResults ? 'translateY(0)' : 'translateY(20px)',
+        transition: 'all 0.6s ease',
+      }}>
+        {/* Main panel with shadow pool and glow */}
+        <div style={{ position: 'relative', marginBottom: '24px' }}>
+          <div style={{
+            position: 'absolute', bottom: '-10px', left: '50%', transform: 'translateX(-50%)',
+            width: '80%', height: '20px',
+            background: 'radial-gradient(ellipse, rgba(0,0,0,0.5) 0%, transparent 70%)',
+            filter: 'blur(10px)', pointerEvents: 'none',
+          }} />
+          <div style={{
+            position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+            width: '90%', height: '110%',
+            background: 'radial-gradient(ellipse, rgba(167,139,250,0.03) 0%, transparent 60%)',
+            pointerEvents: 'none', filter: 'blur(30px)',
+          }} />
+          <div style={{
+            background: 'rgba(255,255,255,0.02)',
+            border: '1px solid rgba(255,255,255,0.06)',
+            borderTop: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '24px',
+            padding: '28px',
+            position: 'relative',
+          }}>
+          
+          {/* Mini Grid — hero element */}
+          <div style={{ marginBottom: '24px' }}>
+            <MatchGrid matchCount={matchCount} matchPositions={matchPositions} />
+          </div>
+          
+          {/* Two-tile layout: Match Result + Comparison Stats */}
+          <div style={{
+            display: 'flex',
+            gap: '16px',
+            marginBottom: '24px',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            alignItems: 'stretch',
+          }}>
+            
+            {/* LEFT TILE: Your Match Result — with shadow pool and brighter top border */}
+            <div style={{ position: 'relative', display: 'flex', flex: '1 1 280px', maxWidth: '320px' }}>
+              <div style={{
+                position: 'absolute', bottom: '-6px', left: '50%', transform: 'translateX(-50%)',
+                width: '80%', height: '12px',
+                background: 'radial-gradient(ellipse, rgba(0,0,0,0.4) 0%, transparent 70%)',
+                filter: 'blur(6px)', pointerEvents: 'none',
+              }} />
+              <div style={{
+                flex: 1,
+                padding: '24px',
+                background: `linear-gradient(135deg, ${tier.isGradient ? 'rgba(167,139,250,0.1)' : `${tier.color}10`}, ${tier.isGradient ? 'rgba(251,191,36,0.05)' : `${tier.color}05`})`,
+                border: `1px solid ${tier.isGradient ? 'rgba(251,191,36,0.2)' : `${tier.color}30`}`,
+                borderTop: `1px solid ${tier.isGradient ? 'rgba(251,191,36,0.3)' : `${tier.color}40`}`,
+                borderRadius: '20px',
+                textAlign: 'center',
+                position: 'relative',
+              }}>
+                {/* Badges for personal best / today's leader */}
+                {(isNewPersonalBest || isTodaysLeader) && (
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '12px', flexWrap: 'wrap' }}>
+                    {isNewPersonalBest && (
+                      <span style={{
+                        background: 'rgba(167,139,250,0.2)',
+                        border: '1px solid rgba(167,139,250,0.4)',
+                        borderRadius: '20px',
+                        padding: '4px 10px',
+                        fontSize: '10px',
+                        color: '#a78bfa',
+                        fontWeight: '600',
+                        textTransform: 'uppercase',
+                      }}>
+                        🎉 New Personal Highest
+                      </span>
+                    )}
+                    {isTodaysLeader && (
+                      <span style={{
+                        background: 'rgba(251,191,36,0.2)',
+                        border: '1px solid rgba(251,191,36,0.4)',
+                        borderRadius: '20px',
+                        padding: '4px 10px',
+                        fontSize: '10px',
+                        color: '#fbbf24',
+                        fontWeight: '600',
+                        textTransform: 'uppercase',
+                      }}>
+                        👑 Today's Leader
+                      </span>
+                    )}
+                  </div>
+                )}
+                
+                {/* Large match count */}
+                <div style={{ marginBottom: '16px' }}>
+                  <div style={{ marginBottom: '6px' }}>
+                    <span style={{
+                      fontFamily: "'Cormorant Garamond', Georgia, serif",
+                      fontSize: '72px',
+                      fontWeight: '300',
+                      lineHeight: 1,
+                      color: tier.isGradient ? '#fff' : tier.color,
+                      background: tier.isGradient 
+                        ? 'linear-gradient(135deg, #a78bfa, #fb7185, #fbbf24)' 
+                        : 'none',
+                      WebkitBackgroundClip: tier.isGradient ? 'text' : 'none',
+                      WebkitTextFillColor: tier.isGradient ? 'transparent' : 'inherit',
+                      textShadow: tier.isGradient ? 'none' : `0 0 40px ${tier.glow}`,
+                    }}>
+                      {matchCount}
+                    </span>
+                    <span style={{
+                      fontFamily: "'Cormorant Garamond', Georgia, serif",
+                      fontSize: '28px',
+                      fontWeight: '300',
+                      color: 'rgba(255,255,255,0.4)',
+                      marginLeft: '6px',
+                    }}>
+                      of 52
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.4 }}>
+                    positions aligned with someone else's shuffle
+                  </div>
+                </div>
+                
+                {/* Rarity Badge — tier name Cormorant */}
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '8px 16px',
+                  borderRadius: '20px',
+                  background: tier.isGradient 
+                    ? 'linear-gradient(135deg, rgba(167,139,250,0.2), rgba(251,113,133,0.2), rgba(251,191,36,0.2))'
+                    : `${tier.color}20`,
+                  border: `1px solid ${tier.isGradient ? 'rgba(251,191,36,0.3)' : tier.color}50`,
+                  boxShadow: `0 0 20px ${tier.glow}`,
+                }}>
+                  <span style={{
+                    fontFamily: "'Cormorant Garamond', Georgia, serif",
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    color: tier.isGradient ? '#fbbf24' : tier.color,
+                    letterSpacing: '2px',
+                    textTransform: 'uppercase',
+                  }}>
+                    {tier.name}
+                  </span>
+                  <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>
+                    {odds}
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            {/* RIGHT TILE: Comparison Stats — with shadow pool and brighter top border */}
+            <div style={{ position: 'relative', display: 'flex', flex: '1 1 280px', maxWidth: '320px' }}>
+              <div style={{
+                position: 'absolute', bottom: '-6px', left: '50%', transform: 'translateX(-50%)',
+                width: '80%', height: '12px',
+                background: 'radial-gradient(ellipse, rgba(0,0,0,0.4) 0%, transparent 70%)',
+                filter: 'blur(6px)', pointerEvents: 'none',
+              }} />
+              <div style={{
+                flex: 1,
+                padding: '20px 24px',
+                background: 'rgba(255,255,255,0.02)',
+                border: '1px solid rgba(255,255,255,0.06)',
+                borderTop: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '20px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                gap: '16px',
+                position: 'relative',
+              }}>
+                {/* Your Highest */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    {isNewPersonalBest && <span style={{ fontSize: '14px' }}>🎉</span>}
+                    <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>Your Highest</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', flexShrink: 0 }}>
+                    <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '24px', fontWeight: '400', color: '#a78bfa' }}>
+                      {matchCount}
+                    </span>
+                    {isNewPersonalBest && <span style={{ fontSize: '10px', color: '#a78bfa', fontWeight: '600' }}>NEW</span>}
+                  </div>
+                </div>
+                
+                <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)' }} />
+                
+                {/* Today's Highest */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    {isTodaysLeader && <span style={{ fontSize: '14px' }}>👑</span>}
+                    <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>Today's Highest</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', flexShrink: 0 }}>
+                    <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '24px', fontWeight: '400', color: '#34d399' }}>
+                      {todayHighest ? todayHighest.count : '—'}
+                    </span>
+                    {isTodaysLeader && <span style={{ fontSize: '10px', color: '#34d399', fontWeight: '600' }}>YOU</span>}
+                  </div>
+                </div>
+                
+                <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)' }} />
+                
+                {/* Global Highest */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                  <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)' }}>Global Highest</span>
+                  <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '24px', fontWeight: '400', color: '#fbbf24', flexShrink: 0 }}>
+                    {globalHighest ? globalHighest.count : '—'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Match Connection — with shadow and brighter top border */}
+          <div style={{ textAlign: 'center' }}>
+            <div style={{
+              fontSize: '11px',
+              color: 'rgba(255,255,255,0.35)',
+              textTransform: 'uppercase',
+              letterSpacing: '1px',
+              marginBottom: '10px',
+            }}>
+              Closest match from {totalShuffles ? totalShuffles.toLocaleString() : '—'} shuffles worldwide
+            </div>
+            <div style={{ position: 'relative', display: 'inline-block' }}>
+              <div style={{
+                position: 'absolute', bottom: '-6px', left: '50%', transform: 'translateX(-50%)',
+                width: '80%', height: '10px',
+                background: 'radial-gradient(ellipse, rgba(0,0,0,0.3) 0%, transparent 70%)',
+                filter: 'blur(6px)', pointerEvents: 'none',
+              }} />
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '10px 20px',
+                background: 'rgba(167, 139, 250, 0.1)',
+                border: '1px solid rgba(167, 139, 250, 0.2)',
+                borderTop: '1px solid rgba(167, 139, 250, 0.3)',
+                borderRadius: '12px',
+                position: 'relative',
+              }}>
+                <span style={{ fontSize: '14px', color: '#a78bfa', fontWeight: '500' }}>
+                  #{matchedWithShuffle ? matchedWithShuffle.toLocaleString() : '—'}
+                </span>
+                <span style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'rgba(255,255,255,0.3)' }} />
+                <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '14px', fontWeight: '600', fontStyle: 'italic', color: 'rgba(255,255,255,0.7)' }}>
+                  Somewhere out there 🌍
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          {/* Live ticker — expandable, contextually tied to "shuffles worldwide" */}
+          <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <button
+              onClick={() => setShowTicker(!showTicker)}
+              style={{
+                background: tickerFlash ? 'rgba(52, 211, 153, 0.06)' : 'rgba(255,255,255,0.03)',
+                border: `1px solid ${tickerFlash ? 'rgba(52, 211, 153, 0.15)' : 'rgba(255,255,255,0.06)'}`,
+                borderTop: `1px solid ${tickerFlash ? 'rgba(52, 211, 153, 0.2)' : 'rgba(255,255,255,0.09)'}`,
+                borderRadius: '28px',
+                padding: '10px 22px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                transition: 'all 0.4s ease',
+              }}
+              onMouseEnter={e => { 
+                e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; 
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+              }}
+              onMouseLeave={e => { 
+                e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; 
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
+              }}
+            >
+              <div style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: '#34d399',
+                boxShadow: tickerFlash 
+                  ? '0 0 10px rgba(52, 211, 153, 0.8), 0 0 20px rgba(52, 211, 153, 0.4)' 
+                  : '0 0 6px rgba(52, 211, 153, 0.5)',
+                animation: 'pulse 2s ease infinite',
+                transition: 'box-shadow 0.3s ease',
+              }} />
+              <span style={{
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontSize: '16px',
+                fontWeight: '600',
+                fontStyle: 'italic',
+                color: tickerFlash ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.5)',
+                transition: 'color 0.4s ease',
+              }}>
+                {liveCount} {liveCount === 1 ? 'shuffle' : 'shuffles'} in the last minute
+              </span>
+              <span style={{
+                fontSize: '10px',
+                color: 'rgba(255,255,255,0.2)',
+                transform: showTicker ? 'rotate(180deg)' : 'rotate(0deg)',
+                transition: 'transform 0.3s ease',
+                display: 'inline-block',
+              }}>▼</span>
+            </button>
+            
+            <div style={{
+              width: '100%',
+              maxHeight: showTicker ? '250px' : '0',
+              opacity: showTicker ? 1 : 0,
+              overflow: 'hidden',
+              transition: 'max-height 0.5s ease, opacity 0.4s ease, margin 0.5s ease',
+              marginTop: showTicker ? '12px' : '0',
+            }}>
+              <div style={{
+                background: 'rgba(0,0,0,0.15)',
+                border: '1px solid rgba(255,255,255,0.04)',
+                borderRadius: '12px',
+                padding: '16px 20px',
+              }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {tickerEntries.map((entry, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        opacity: showTicker ? 1 : 0,
+                        transform: showTicker ? 'translateY(0)' : 'translateY(-4px)',
+                        transition: `opacity 0.4s ease ${0.1 + i * 0.06}s, transform 0.4s ease ${0.1 + i * 0.06}s`,
+                      }}
+                    >
+                      <span style={{
+                        fontFamily: "'Cormorant Garamond', Georgia, serif",
+                        fontSize: '15px',
+                        fontWeight: '600',
+                        fontStyle: 'italic',
+                        color: 'rgba(255,255,255,0.45)',
+                      }}>
+                        Someone in {entry.city} shuffled
+                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{
+                          fontFamily: "'Inter', system-ui, sans-serif",
+                          fontSize: '13px',
+                          color: entry.matchCount >= 2
+                            ? RARITY_TIERS[getTierForMatch(entry.matchCount)].color 
+                            : 'rgba(255,255,255,0.2)',
+                          fontWeight: '500',
+                        }}>
+                          {entry.matchCount} of 52
+                        </span>
+                        <span style={{
+                          fontFamily: "'Inter', system-ui, sans-serif",
+                          fontSize: '11px',
+                          color: 'rgba(255,255,255,0.25)',
+                        }}>
+                          {entry.timeAgo}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          </div>
         </div>
         
-        <button
-          onClick={onOpenAchievements}
-          style={{
-            background: 'rgba(167, 139, 250, 0.1)',
-            border: '1px solid rgba(167, 139, 250, 0.2)',
-            borderRadius: '12px',
-            padding: '14px 20px',
-            cursor: 'pointer',
+        {/* Streak + Share + Trophy Cabinet buttons */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: '12px',
+          marginBottom: '32px',
+          flexWrap: 'wrap',
+          width: '100%',
+          maxWidth: '660px',
+          margin: '0 auto 32px',
+        }}>
+          <div style={{
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            color: '#a78bfa',
-            fontSize: '14px',
-            fontWeight: '500',
-          }}
-        >
-          View Achievements →
-        </button>
+            padding: '14px 20px',
+            background: 'rgba(251, 113, 133, 0.1)',
+            border: '1px solid rgba(251, 113, 133, 0.2)',
+            borderTop: '1px solid rgba(251, 113, 133, 0.3)',
+            borderRadius: '50px',
+            flex: '1 1 0',
+            justifyContent: 'center',
+          }}>
+            <span style={{ fontSize: '18px' }}>🔥</span>
+            <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '15px', color: '#fb7185', fontWeight: '600' }}>13 day streak</span>
+          </div>
+          
+          <button style={{
+            fontFamily: "'Cormorant Garamond', Georgia, serif",
+            padding: '16px 32px',
+            background: 'linear-gradient(135deg, rgba(167, 139, 250, 0.2), rgba(251, 113, 133, 0.15))',
+            border: '1px solid rgba(167, 139, 250, 0.35)',
+            borderTop: '1px solid rgba(167, 139, 250, 0.5)',
+            borderRadius: '50px',
+            color: '#ffffff',
+            fontSize: '15px',
+            fontWeight: '600',
+            letterSpacing: '2px',
+            textTransform: 'uppercase',
+            cursor: 'pointer',
+            transition: 'all 0.4s ease',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            flex: '1.3 1 0',
+            boxShadow: '0 0 20px rgba(167, 139, 250, 0.15), 0 0 40px rgba(167, 139, 250, 0.08)',
+          }}>
+            Share Result
+          </button>
+          
+          <button
+            onClick={onOpenAchievements}
+            style={{
+              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              padding: '14px 20px',
+              background: 'transparent',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderTop: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: '50px',
+              color: 'rgba(255,255,255,0.45)',
+              fontSize: '14px',
+              fontWeight: '400',
+              letterSpacing: '2px',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+              transition: 'all 0.4s ease',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              flex: '1 1 0',
+            }}
+          >
+            🏆 Trophy Cabinet
+          </button>
+        </div>
+        
+        {/* Return prompt — Cormorant italic */}
+        <div style={{
+          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          textAlign: 'center',
+          fontSize: '14px',
+          fontWeight: '600',
+          fontStyle: 'italic',
+          color: 'rgba(255,255,255,0.45)',
+          textShadow: '0 2px 8px rgba(0,0,0,0.3)',
+        }}>
+          Return tomorrow to continue the experiment
+        </div>
       </div>
-
-      <p style={{
-        marginTop: '24px',
-        fontSize: '13px',
-        color: 'rgba(255,255,255,0.3)',
-        animation: 'fadeInUp 0.6s ease 5.2s both',
-      }}>
-        Return tomorrow to continue the experiment and keep your streak alive.
-      </p>
     </div>
   );
 };
@@ -1521,7 +2546,15 @@ export default function DailyShuffleFinal() {
   const [shuffleHash] = useState(generateHash());
   const [dailySeed] = useState(generateHash());
   const [matchData, setMatchData] = useState(null);
-const [totalShuffles, setTotalShuffles] = useState(0);
+  const [totalShuffles, setTotalShuffles] = useState(0);
+  const [globalHighest, setGlobalHighest] = useState(null);
+  const [todayHighest, setTodayHighest] = useState(null);
+  const [factoryCount, setFactoryCount] = useState(null);
+  const [matchedPositions, setMatchedPositions] = useState(null);
+  const [finds, setFinds] = useState([]);
+  const [userData, setUserData] = useState(null);
+  const [streak, setStreak] = useState(0);
+  const [isNewPersonalBest, setIsNewPersonalBest] = useState(false);
   
   const handleShuffle = async () => {
     setIsShuffling(true);
@@ -1535,7 +2568,9 @@ const [totalShuffles, setTotalShuffles] = useState(0);
     }, 90);
 
     // Call the real API
-    const response = await fetch('https://shuffled-production.up.railway.app/api/shuffle');
+    const response = await fetch('https://shuffled-production.up.railway.app/api/shuffle', {
+      credentials: 'include',
+    });
     const data = await response.json();
 
     // Parse the real cards from the API
@@ -1547,6 +2582,14 @@ const [totalShuffles, setTotalShuffles] = useState(0);
       setDeck(realDeck);
       setMatchData(data.match);
       setTotalShuffles(data.totalShuffles);
+      setGlobalHighest(data.globalHighest);
+      setTodayHighest(data.todayHighest);
+      setFactoryCount(data.factoryCount);
+      setMatchedPositions(data.match ? data.match.matchedPositions : null);
+      setFinds(data.finds || []);
+      setUserData(data.user || null);
+      setStreak(data.user ? data.user.streak : 0);
+      setIsNewPersonalBest(data.user ? data.user.isNewPersonalBest : false);
       setIsShuffling(false);
       setView('post-shuffle');
     }, 1800);
@@ -1555,7 +2598,7 @@ const [totalShuffles, setTotalShuffles] = useState(0);
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(180deg, #0d0d1a 0%, #151528 50%, #0d0d1a 100%)',
+      background: 'radial-gradient(ellipse at 50% 45%, #09090f 0%, #040407 50%, #020204 100%)',
       padding: '80px 20px 100px',
       fontFamily: "'Inter', system-ui, sans-serif",
       color: '#ffffff',
@@ -1568,7 +2611,7 @@ const [totalShuffles, setTotalShuffles] = useState(0);
     }}>
       <Header 
         isFirstTime={view === 'first-time'} 
-        streak={13} 
+        streak={streak} 
         showFull={view !== 'first-time'} 
         onOpenProvenance={() => setShowProvenance(true)}
       />
@@ -1581,31 +2624,54 @@ const [totalShuffles, setTotalShuffles] = useState(0);
         dailySeed={dailySeed}
       />
 
+      {/* Star field — creates depth in the background */}
+      <StarField />
+
       {/* Ambient glow effects */}
-      <div style={{ position: 'absolute', top: '20%', left: '10%', width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(167, 139, 250, 0.08) 0%, transparent 70%)', pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', bottom: '30%', right: '5%', width: '350px', height: '350px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(251, 113, 133, 0.06) 0%, transparent 70%)', pointerEvents: 'none' }} />
+      <div style={{ position: 'fixed', top: '15%', left: '50%', marginLeft: '-325px', width: '500px', height: '500px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(167, 139, 250, 0.14) 0%, transparent 65%)', filter: 'blur(40px)', pointerEvents: 'none', zIndex: 0 }} />
+      <div style={{ position: 'fixed', bottom: '20%', left: '50%', marginLeft: '-63px', width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(251, 113, 133, 0.11) 0%, transparent 65%)', filter: 'blur(40px)', pointerEvents: 'none', zIndex: 0 }} />
 
-      {view === 'first-time' && <FirstTimeView onShuffle={handleShuffle} isShuffling={isShuffling} shuffleHash={shuffleHash} />}
-      {view === 'returning' && <ReturningUserView onShuffle={handleShuffle} isShuffling={isShuffling} streak={13} onOpenAchievements={() => setShowAchievements(true)} shuffleHash={shuffleHash} />}
-      {view === 'post-shuffle' && (
-        <PostShuffleResultView 
-          deck={deck} 
-          matchCount={matchData ? matchData.positions : 0}
-          matchedWithShuffle={matchData ? matchData.matchedWithShuffle : null}
-          totalShuffles={totalShuffles}
-          isNewPersonalBest={false}
-          isTodaysLeader={false}
-          newAchievements={[]}
-          onOpenAchievements={() => setShowAchievements(true)}
-          shuffleHash={shuffleHash}
-          detectedHands={[]}
-        />
-      )}
+      {/* Vignette — darkens edges, cinematic depth */}
+      <div style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'radial-gradient(ellipse at 50% 50%, transparent 35%, rgba(0,0,0,0.5) 100%)',
+        pointerEvents: 'none',
+        zIndex: 0,
+      }} />
 
-      {/* Footer */}
-      <div style={{ marginTop: 'auto', paddingTop: '48px', textAlign: 'center', position: 'relative', zIndex: 1 }}>
-        <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.15)', letterSpacing: '1px' }}>
-          52! = 80,658,175,170,943,878,571,660,636,856,403,766,975,289,505,440,883,277,824,000,000,000,000
+      {/* Content — sits above the fixed background layers */}
+      <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', minHeight: '100%', flexGrow: 1 }}>
+        {view === 'first-time' && <FirstTimeView onShuffle={handleShuffle} isShuffling={isShuffling} shuffleHash={shuffleHash} />}
+        {view === 'returning' && <ReturningUserView onShuffle={handleShuffle} isShuffling={isShuffling} streak={streak} onOpenAchievements={() => setShowAchievements(true)} shuffleHash={shuffleHash} />}
+        {view === 'post-shuffle' && (
+          <PostShuffleResultView 
+            deck={deck} 
+            matchCount={matchData ? matchData.positions : 0}
+            matchedWithShuffle={matchData ? matchData.matchedWithShuffle : null}
+            matchedPositions={matchedPositions}
+            totalShuffles={totalShuffles}
+            globalHighest={globalHighest}
+            todayHighest={todayHighest}
+            factoryCount={factoryCount}
+            isNewPersonalBest={isNewPersonalBest}
+            isTodaysLeader={false}
+            newAchievements={[]}
+            onOpenAchievements={() => setShowAchievements(true)}
+            shuffleHash={shuffleHash}
+            detectedHands={[]}
+            finds={finds}
+          />
+        )}
+
+        {/* Footer */}
+        <div style={{ marginTop: 'auto', paddingTop: '48px', textAlign: 'center' }}>
+          <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '12px', fontStyle: 'italic', color: 'rgba(255,255,255,0.25)', marginBottom: '8px' }}>
+            A daily experiment in impossibility
+          </div>
+          <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.12)', letterSpacing: '1px' }}>
+            52! = 80,658,175,170,943,878,571,660,636,856,403,766,975,289,505,440,883,277,824,000,000,000,000
+          </div>
         </div>
       </div>
 
@@ -1617,14 +2683,24 @@ const [totalShuffles, setTotalShuffles] = useState(0);
         @keyframes suitPop { 0% { opacity: 0; transform: scale(0) rotate(-30deg); } 60% { transform: scale(1.3) rotate(8deg); } 80% { transform: scale(0.9) rotate(-3deg); } 100% { opacity: 1; transform: scale(1) rotate(0deg); } }
         @keyframes shimmerStar { 0%, 100% { opacity: 0.5; transform: scale(1); } 50% { opacity: 1; transform: scale(1.1); } }
         @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
-        @keyframes haloGlow { 0%, 100% { opacity: 0.18; transform: translate(-50%, -50%) scale(1); } 50% { opacity: 0.38; transform: translate(-50%, -50%) scale(1.02); } }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+        @keyframes twinkle { 0%, 100% { opacity: 0.22; } 30% { opacity: 0.03; } 70% { opacity: 0.03; } }
         @keyframes borderChase { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         @keyframes badgeRotate { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        @keyframes frostShimmer { 0% { background-position: 0% 0%; } 50% { background-position: 100% 100%; } 100% { background-position: 0% 0%; } }
         
         * { box-sizing: border-box; }
-        button:hover:not(:disabled) { transform: scale(1.02); }
+        
+        button { transition: all 0.4s ease; }
+        button:hover:not(:disabled) { transform: none; }
+        
+        /* Light sweep animation for premium buttons on hover */
+        @keyframes btnSweep { 
+          0% { left: -100%; } 
+          100% { left: 200%; } 
+        }
+        button:hover .btn-sweep { animation: btnSweep 0.8s ease forwards; }
         
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); border-radius: 3px; }
