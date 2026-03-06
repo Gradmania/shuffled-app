@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 
 const SUITS = ['♠', '♥', '♦', '♣'];
 const SUIT_COLORS = { '♠': '#1a1a2e', '♥': '#be3455', '♦': '#be3455', '♣': '#1a1a2e' };
@@ -1690,7 +1690,7 @@ const FirstTimeView = ({ onShuffle, isShuffling, shuffleHash }) => (
 );
 
 // ============ RETURNING USER VIEW ============
-const ReturningUserView = ({ onShuffle, isShuffling, streak, onOpenAchievements, shuffleHash }) => (
+const ReturningUserView = ({ onShuffle, isShuffling, streak, onOpenAchievements, shuffleHash, globalHighest, todayHighest, todayShuffles, userData }) => (
   <div style={{ textAlign: 'center', position: 'relative', zIndex: 1, maxWidth: '700px', padding: '0 20px' }}>
     <div style={{ marginBottom: '16px' }}>
       <FloatingSuits size="medium" />
@@ -1741,21 +1741,21 @@ const ReturningUserView = ({ onShuffle, isShuffling, streak, onOpenAchievements,
         <StatCard 
           icon="🏆"
           label="Global Highest" 
-          value="9" 
+          value={globalHighest != null ? String(globalHighest) : '—'} 
           subtext="positions matched"
           accentColor="#fbbf24" 
         />
         <StatCard 
           icon="✨"
           label="Today's Highest" 
-          value="6" 
-          subtext="2,847 shuffles so far"
+          value={todayHighest != null ? String(todayHighest) : '—'} 
+          subtext={todayShuffles != null ? `${todayShuffles.toLocaleString()} shuffles today` : '—'}
           accentColor="#34d399" 
         />
         <StatCard 
           icon="🎯"
           label="Your Highest" 
-          value="5" 
+          value={userData ? String(userData.yourHighest) : '—'} 
           subtext="positions matched"
           accentColor="#a78bfa" 
         />
@@ -1856,8 +1856,382 @@ const ReturningUserView = ({ onShuffle, isShuffling, streak, onOpenAchievements,
   </div>
 );
 
+// ============ SHARE CARD (REDESIGNED) ============
+// The image card users share on social media.
+// Self-contained visual — designed for screenshots and downloads.
+
+// --- Share card starfield (static, for screenshot capture) ---
+const generateShareCardStars = () => {
+  const stars = [];
+  const seeds = [0.12,0.87,0.34,0.56,0.91,0.23,0.67,0.45,0.78,0.03,0.95,0.41,0.62,0.18,0.73,0.29,0.84,0.51,0.07,0.96,0.38,0.69,0.14,0.82,0.47,0.58,0.21,0.76,0.33,0.89,0.05,0.64,0.42,0.71,0.16,0.93,0.27,0.55,0.81,0.09,0.48,0.74,0.36,0.61,0.19,0.86,0.52,0.08,0.97,0.31];
+  for (let i = 0; i < 50; i++) {
+    const s1 = seeds[i % seeds.length];
+    const s2 = seeds[(i * 7 + 3) % seeds.length];
+    const s3 = seeds[(i * 13 + 7) % seeds.length];
+    stars.push({ left: `${s1*100}%`, top: `${s2*100}%`, size: 1+s3*1.5, opacity: 0.08+s3*0.35, isTinted: i < 10 });
+  }
+  return stars;
+};
+const SHARE_CARD_STARS = generateShareCardStars();
+
+const ShareCardStarfield = ({ tierGlow }) => (
+  <div style={{ position:'absolute', top:0, left:0, right:0, bottom:0, pointerEvents:'none', borderRadius:'20px', overflow:'hidden' }}>
+    {SHARE_CARD_STARS.map((star, i) => (
+      <div key={i} style={{
+        position:'absolute', left:star.left, top:star.top,
+        width:`${star.size}px`, height:`${star.size}px`, borderRadius:'50%',
+        background: star.isTinted ? tierGlow.replace(/[\d.]+\)$/, `${star.opacity*1.3})`) : `rgba(255,255,255,${star.opacity})`,
+        boxShadow: star.opacity > 0.25 ? `0 0 ${star.size*2}px ${star.isTinted ? tierGlow.replace(/[\d.]+\)$/,`${star.opacity*0.5})`) : `rgba(255,255,255,${star.opacity*0.3})`}` : 'none',
+      }} />
+    ))}
+  </div>
+);
+
+// --- Share card suit icons: whisper-level brand accents ---
+const ShareCardSuitIcons = () => {
+  const suits = [
+    { char: '♠', color: 'rgba(167, 139, 250, 0.12)',  glow: 'rgba(167, 139, 250, 0.06)', size: '44px' },
+    { char: '♥', color: 'rgba(251, 113, 133, 0.12)',  glow: 'rgba(251, 113, 133, 0.06)', size: '48px' },
+    { char: '♦', color: 'rgba(251, 191, 36, 0.12)',   glow: 'rgba(251, 191, 36, 0.06)',  size: '44px' },
+    { char: '♣', color: 'rgba(52, 211, 153, 0.12)',   glow: 'rgba(52, 211, 153, 0.06)',  size: '46px' },
+  ];
+  return (
+    <div style={{
+      position:'absolute', bottom:'4px', left:0, right:0, height:'80px',
+      pointerEvents:'none', overflow:'hidden', borderRadius:'0 0 20px 20px',
+      display:'flex', justifyContent:'center', alignItems:'flex-end', gap:'24px',
+    }}>
+      {suits.map((suit, i) => (
+        <div key={i} style={{
+          fontSize:suit.size, color:suit.color,
+          filter: 'blur(3px)',
+          textShadow: `0 0 28px ${suit.glow}, 0 0 56px ${suit.glow}, 0 0 95px ${suit.glow}`,
+          lineHeight:1, userSelect:'none',
+        }}>
+          {suit.char}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const ShareCardMatchGrid = ({ matchCount, matchedPositions }) => {
+  const tierKey = getTierForMatch(matchCount);
+  const tier = RARITY_TIERS[tierKey];
+  const positionSet = new Set(matchedPositions || []);
+  return (
+    <div style={{ display:'grid', gridTemplateColumns:'repeat(13, 1fr)', gridTemplateRows:'repeat(4, 1fr)', gap:'4px', padding:'14px 10px', background:'rgba(0,0,0,0.3)', borderRadius:'10px' }}>
+      {Array.from({ length: 52 }, (_, i) => {
+        const isMatch = positionSet.has(i);
+        return (<div key={i} style={{
+          width:'100%', aspectRatio:'1', borderRadius:'2.5px',
+          background: isMatch ? (tier.isGradient ? 'linear-gradient(135deg, #a78bfa, #fb7185, #fbbf24)' : tier.color) : 'rgba(255,255,255,0.07)',
+          boxShadow: isMatch ? `0 0 8px ${tier.glow}` : 'none',
+        }} />);
+      })}
+    </div>
+  );
+};
+
+const ShareCard = ({ matchCount, matchedWithShuffle, shuffleNumber, totalShuffles, streak, matchedPositions }) => {
+  const tierKey = getTierForMatch(matchCount);
+  const tier = RARITY_TIERS[tierKey];
+  const odds = getOddsForMatch(matchCount);
+  const dateStr = new Date().toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+  const positionSet = matchedPositions || [];
+
+  return (
+    <div style={{ width:'340px', background:'linear-gradient(165deg, #151528 0%, #0d0d1a 100%)', borderRadius:'20px', padding:'28px 24px 24px', fontFamily:"'Inter', system-ui, sans-serif", position:'relative', overflow:'hidden', border:'1px solid rgba(255,255,255,0.08)' }}>
+      <ShareCardStarfield tierGlow={tier.glow} />
+      <ShareCardSuitIcons />
+
+      {/* Purple glow orb — upper-left of centre */}
+      <div style={{ position:'absolute', top:'32%', left:'50%', marginLeft:'-87px', width:'145px', height:'145px', borderRadius:'50%', background:'radial-gradient(circle, rgba(167, 139, 250, 0.14) 0%, transparent 70%)', filter:'blur(20px)', pointerEvents:'none' }} />
+
+      {/* Pink glow orb — lower-right of centre */}
+      <div style={{ position:'absolute', bottom:'34%', left:'50%', marginLeft:'-50px', width:'128px', height:'128px', borderRadius:'50%', background:'radial-gradient(circle, rgba(251, 113, 133, 0.11) 0%, transparent 70%)', filter:'blur(20px)', pointerEvents:'none' }} />
+
+      {/* Depth overlay */}
+      <div style={{ position:'absolute', top:0, left:0, right:0, height:'120px', background:'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%)', pointerEvents:'none' }} />
+
+      {/* Top accent line */}
+      <div style={{ position:'absolute', top:0, left:'10%', right:'10%', height:'2px', background: tier.isGradient ? 'linear-gradient(90deg, #a78bfa, #fb7185, #fbbf24, #34d399)' : tier.color, borderRadius:'0 0 2px 2px', boxShadow:`0 0 20px ${tier.glow}` }} />
+
+      {/* Wordmark */}
+      <div style={{ textAlign:'center', marginBottom:'4px', position:'relative' }}>
+        <span style={{ fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'24px', fontWeight:'600', color:'#ffffff', letterSpacing:'5px', textTransform:'uppercase' }}>Shuffled</span>
+      </div>
+
+      {/* Tagline */}
+      <div style={{ textAlign:'center', marginBottom:'20px', fontSize:'11px', color:'rgba(255,255,255,0.25)', fontStyle:'italic', letterSpacing:'0.3px', position:'relative' }}>
+        A daily experiment in impossibility
+      </div>
+
+      {/* Match grid */}
+      <div style={{ marginBottom:'24px', position:'relative' }}>
+        <ShareCardMatchGrid matchCount={matchCount} matchedPositions={positionSet} />
+      </div>
+
+      {/* Big number */}
+      <div style={{ textAlign:'center', marginBottom:'8px', position:'relative' }}>
+        <span style={{ fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'56px', fontWeight:'300', lineHeight:1, color: tier.isGradient ? '#fff' : tier.color, background: tier.isGradient ? 'linear-gradient(135deg, #a78bfa, #fb7185, #fbbf24)' : 'none', WebkitBackgroundClip: tier.isGradient ? 'text' : 'none', WebkitTextFillColor: tier.isGradient ? 'transparent' : 'inherit', textShadow: tier.isGradient ? 'none' : `0 0 40px ${tier.glow}` }}>
+          {matchCount}
+        </span>
+        <span style={{ fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'22px', fontWeight:'300', color:'rgba(255,255,255,0.35)', marginLeft:'4px' }}>
+          of 52
+        </span>
+      </div>
+
+      {/* Explanation */}
+      <div style={{ textAlign:'center', fontSize:'13px', color:'rgba(255,255,255,0.7)', marginBottom:'20px', lineHeight:1.4, fontWeight:'500', position:'relative' }}>
+        positions aligned with someone else's shuffle
+      </div>
+
+      {/* Tier + odds pill */}
+      <div style={{ display:'flex', justifyContent:'center', marginBottom:'20px', position:'relative' }}>
+        <div style={{ width:'260px', padding:'10px 16px', borderRadius:'10px', background: tier.isGradient ? 'linear-gradient(135deg, rgba(167,139,250,0.12), rgba(251,113,133,0.12), rgba(251,191,36,0.12))' : `${tier.color}10`, border:`1px solid ${tier.isGradient ? 'rgba(251,191,36,0.25)' : tier.color}25`, display:'flex', alignItems:'center', justifyContent:'center', gap:'8px' }}>
+          <span style={{ fontSize:'11px', fontWeight:'600', color: tier.isGradient ? '#fbbf24' : tier.color, letterSpacing:'1.5px', textTransform:'uppercase' }}>{tier.name}</span>
+          <span style={{ width:'3px', height:'3px', borderRadius:'50%', background:'rgba(255,255,255,0.2)' }} />
+          <span style={{ color:'rgba(255,255,255,0.4)', fontWeight:'400', fontSize:'11px', letterSpacing:'0.5px' }}>{odds}</span>
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div style={{ height:'1px', background:'linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)', marginBottom:'20px', position:'relative' }} />
+
+      {/* Stacked pills */}
+      <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'8px', marginBottom:'16px', position:'relative' }}>
+        <div style={{ width:'260px', padding:'10px 16px', borderRadius:'10px', background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.07)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <span style={{ fontSize:'12px', color: tier.isGradient ? '#fbbf24' : tier.color, fontWeight:'600' }}>Matched with #{matchedWithShuffle ? matchedWithShuffle.toLocaleString() : '—'}</span>
+          <span style={{ fontSize:'12px', color:'rgba(255,255,255,0.4)' }}>&nbsp;from {totalShuffles ? totalShuffles.toLocaleString() : '—'} shuffles</span>
+        </div>
+        {streak > 0 && (
+          <div style={{ width:'260px', padding:'10px 16px', borderRadius:'10px', background:'rgba(251, 113, 133, 0.1)', border:'1px solid rgba(251, 113, 133, 0.2)', display:'flex', alignItems:'center', justifyContent:'center', gap:'6px' }}>
+            <span style={{ fontSize:'13px' }}>🔥</span>
+            <span style={{ fontSize:'12px', color:'#fb7185', fontWeight:'600' }}>{streak} day streak!</span>
+          </div>
+        )}
+      </div>
+
+      {/* Shuffle identity */}
+      <div style={{ textAlign:'center', marginBottom:'14px', fontSize:'11px', color:'rgba(255,255,255,0.35)', letterSpacing:'0.5px', position:'relative' }}>
+        Shuffle #{shuffleNumber ? shuffleNumber.toLocaleString() : '—'} · {dateStr}
+      </div>
+
+      {/* CTA */}
+      <div style={{ textAlign:'center', display:'flex', flexDirection:'column', alignItems:'center', gap:'3px', position:'relative' }}>
+        <span style={{ fontSize:'12px', color:'#ffffff', fontWeight:'700', letterSpacing:'1.5px', textTransform:'uppercase' }}>Join the experiment</span>
+        <span style={{ fontSize:'13px', letterSpacing:'0.3px', color: tier.isGradient ? '#fff' : tier.color, fontWeight:'600' }}>playshuffled.io</span>
+      </div>
+    </div>
+  );
+};
+
+// ============ SHARE MODAL ============
+// Overlay when you tap "Share Result."
+// Contains the share card + action buttons (Share / Copy / Download).
+
+const ShareModal = ({ isOpen, onClose, matchCount, matchedWithShuffle, shuffleNumber, totalShuffles, streak, matchedPositions }) => {
+  const cardRef = useRef(null);
+  const [copying, setCopying] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  if (!isOpen) return null;
+
+  // Embed Google Fonts as base64 so dom-to-image SVG can render them
+  const embedFonts = async () => {
+    const fontUrl = 'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600&display=swap';
+    try {
+      // Fetch the CSS (must include a browser-like user-agent to get woff2 URLs)
+      const cssRes = await fetch(fontUrl);
+      let cssText = await cssRes.text();
+      
+      // Find all font file URLs in the CSS
+      const urlRegex = /url\(([^)]+)\)/g;
+      let match;
+      const fetches = [];
+      
+      while ((match = urlRegex.exec(cssText)) !== null) {
+        const fileUrl = match[1].replace(/['"]/g, '');
+        if (fileUrl.startsWith('http')) {
+          fetches.push(
+            fetch(fileUrl)
+              .then(r => r.blob())
+              .then(blob => new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve({ fileUrl, dataUri: reader.result });
+                reader.readAsDataURL(blob);
+              }))
+          );
+        }
+      }
+      
+      const results = await Promise.all(fetches);
+      
+      // Replace each remote URL with its base64 data URI
+      for (const { fileUrl, dataUri } of results) {
+        cssText = cssText.split(fileUrl).join(dataUri);
+      }
+      
+      return cssText;
+    } catch (err) {
+      console.warn('Font embedding failed, falling back:', err);
+      return '';
+    }
+  };
+
+  const generateBlob = async () => {
+    if (!cardRef.current) return null;
+    const domtoimage = (await import('dom-to-image-more')).default;
+    
+    // Embed fonts inline
+    const fontCSS = await embedFonts();
+    let fontStyle = null;
+    if (fontCSS) {
+      fontStyle = document.createElement('style');
+      fontStyle.textContent = fontCSS;
+      cardRef.current.prepend(fontStyle);
+    }
+    
+    try {
+      const blob = await domtoimage.toBlob(cardRef.current, {
+        bgcolor: '#0d0d1a',
+      });
+      return blob;
+    } finally {
+      // Clean up injected style
+      if (fontStyle) fontStyle.remove();
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      const blob = await generateBlob();
+      if (!blob) return;
+      if (navigator.share && navigator.canShare) {
+        const file = new File([blob], 'shuffled-result.png', { type: 'image/png' });
+        const shareData = { files: [file], title: 'My Shuffled Result' };
+        if (navigator.canShare(shareData)) {
+          await navigator.share(shareData);
+          return;
+        }
+      }
+      await handleCopy();
+    } catch (err) {
+      console.error('Share failed:', err);
+    }
+  };
+
+  const handleCopy = async () => {
+    try {
+      setCopying(true);
+      const blob = await generateBlob();
+      if (!blob) return;
+      await navigator.clipboard.write([
+        new ClipboardItem({ 'image/png': blob })
+      ]);
+      setCopying(false);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Copy failed:', err);
+      setCopying(false);
+    }
+  };
+
+  const handleDownload = async () => {
+    try {
+      const blob = await generateBlob();
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = 'shuffled-result.png';
+      link.href = url;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Download failed:', err);
+    }
+  };
+
+  return (
+    <div 
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000,
+        background: 'rgba(0,0,0,0.85)',
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        padding: '20px',
+        animation: 'fadeIn 0.3s ease',
+      }}
+    >
+      <div onClick={(e) => e.stopPropagation()} ref={cardRef}>
+        <ShareCard
+          matchCount={matchCount}
+          matchedWithShuffle={matchedWithShuffle}
+          shuffleNumber={shuffleNumber}
+          totalShuffles={totalShuffles}
+          streak={streak}
+          matchedPositions={matchedPositions}
+        />
+      </div>
+      
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          display: 'flex', gap: '12px', marginTop: '24px', flexWrap: 'wrap', justifyContent: 'center',
+        }}
+      >
+        <button onClick={handleShare} style={{
+          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          padding: '14px 28px', width: '140px', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50px',
+          background: 'linear-gradient(135deg, rgba(167, 139, 250, 0.3), rgba(251, 113, 133, 0.2))',
+          border: '1px solid rgba(167, 139, 250, 0.4)',
+          color: '#fff', fontSize: '14px', fontWeight: '600',
+          letterSpacing: '2px', textTransform: 'uppercase',
+          cursor: 'pointer', transition: 'all 0.3s ease',
+        }}>
+          Share
+        </button>
+        
+        <button onClick={handleCopy} style={{
+          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          padding: '14px 28px', width: '180px', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50px',
+          background: 'rgba(255,255,255,0.05)',
+          border: '1px solid rgba(255,255,255,0.15)',
+          color: 'rgba(255,255,255,0.7)', fontSize: '14px', fontWeight: '400',
+          letterSpacing: '2px', textTransform: 'uppercase',
+          cursor: 'pointer', transition: 'all 0.3s ease',
+        }}>
+          {copied ? 'Copied!' : copying ? 'Copying...' : 'Copy Image'}
+        </button>
+        
+        <button onClick={handleDownload} style={{
+          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          padding: '14px 28px', width: '140px', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50px',
+          background: 'rgba(255,255,255,0.05)',
+          border: '1px solid rgba(255,255,255,0.15)',
+          color: 'rgba(255,255,255,0.7)', fontSize: '14px', fontWeight: '400',
+          letterSpacing: '2px', textTransform: 'uppercase',
+          cursor: 'pointer', transition: 'all 0.3s ease',
+        }}>
+          Download
+        </button>
+      </div>
+      
+      <div style={{
+        marginTop: '20px', fontSize: '12px', color: 'rgba(255,255,255,0.25)',
+        fontStyle: 'italic',
+      }}>
+        Tap anywhere to close
+      </div>
+    </div>
+  );
+};
+
 // ============ POST-SHUFFLE RESULT VIEW (v4 design) ============
-const PostShuffleResultView = ({ deck, matchCount, matchedWithShuffle, matchedPositions: realMatchedPositions, totalShuffles, globalHighest, todayHighest, factoryCount, isNewPersonalBest, isTodaysLeader, newAchievements, onOpenAchievements, shuffleHash, detectedHands, finds }) => {
+const PostShuffleResultView = ({ deck, matchCount, matchedWithShuffle, matchedPositions: realMatchedPositions, totalShuffles, shuffleNumber, globalHighest, todayHighest, factoryCount, isNewPersonalBest, isTodaysLeader, newAchievements, onOpenAchievements, shuffleHash, onShare, detectedHands, finds, streak }) => {
   const [isRevealed, setIsRevealed] = useState(false);
   const [activeFind, setActiveFind] = useState(null);
   const [showFinds, setShowFinds] = useState(false);
@@ -1973,7 +2347,7 @@ const PostShuffleResultView = ({ deck, matchCount, matchedWithShuffle, matchedPo
           textTransform: 'uppercase',
           marginBottom: '4px',
         }}>
-          Shuffle #{totalShuffles ? totalShuffles.toLocaleString() : '—'}
+          Shuffle #{shuffleNumber ? shuffleNumber.toLocaleString() : '—'}
         </div>
         <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.25)' }}>
           {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
@@ -2427,10 +2801,10 @@ const PostShuffleResultView = ({ deck, matchCount, matchedWithShuffle, matchedPo
             justifyContent: 'center',
           }}>
             <span style={{ fontSize: '18px' }}>🔥</span>
-            <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '15px', color: '#fb7185', fontWeight: '600' }}>13 day streak</span>
+            <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '15px', color: '#fb7185', fontWeight: '600' }}>{streak} day streak</span>
           </div>
           
-          <button style={{
+          <button onClick={onShare} style={{
             fontFamily: "'Cormorant Garamond', Georgia, serif",
             padding: '16px 32px',
             background: 'linear-gradient(135deg, rgba(167, 139, 250, 0.2), rgba(251, 113, 133, 0.15))',
@@ -2547,14 +2921,35 @@ export default function DailyShuffleFinal() {
   const [dailySeed] = useState(generateHash());
   const [matchData, setMatchData] = useState(null);
   const [totalShuffles, setTotalShuffles] = useState(0);
+  const [shuffleNumber, setShuffleNumber] = useState(null);
   const [globalHighest, setGlobalHighest] = useState(null);
   const [todayHighest, setTodayHighest] = useState(null);
+  const [todayShuffles, setTodayShuffles] = useState(null);
   const [factoryCount, setFactoryCount] = useState(null);
   const [matchedPositions, setMatchedPositions] = useState(null);
   const [finds, setFinds] = useState([]);
   const [userData, setUserData] = useState(null);
   const [streak, setStreak] = useState(0);
   const [isNewPersonalBest, setIsNewPersonalBest] = useState(false);
+  const [isTodaysLeader, setIsTodaysLeader] = useState(false);
+  const [showShareCard, setShowShareCard] = useState(false);
+
+  useEffect(() => {
+    fetch('https://shuffled-production.up.railway.app/api/stats', {
+      credentials: 'include',
+    })
+      .then(res => res.json())
+      .then(data => {
+        setGlobalHighest(data.globalHighest);
+        setTodayHighest(data.todayHighest);
+        setTodayShuffles(data.todayShuffles);
+        if (data.user) {
+          setUserData(data.user);
+          setStreak(data.user.streak);
+        }
+      })
+      .catch(err => console.error('Stats fetch error:', err));
+  }, []);
   
   const handleShuffle = async () => {
     setIsShuffling(true);
@@ -2582,6 +2977,7 @@ export default function DailyShuffleFinal() {
       setDeck(realDeck);
       setMatchData(data.match);
       setTotalShuffles(data.totalShuffles);
+      setShuffleNumber(data.shuffle.id);
       setGlobalHighest(data.globalHighest);
       setTodayHighest(data.todayHighest);
       setFactoryCount(data.factoryCount);
@@ -2590,6 +2986,7 @@ export default function DailyShuffleFinal() {
       setUserData(data.user || null);
       setStreak(data.user ? data.user.streak : 0);
       setIsNewPersonalBest(data.user ? data.user.isNewPersonalBest : false);
+      setIsTodaysLeader(data.user ? data.user.isTodaysLeader : false);
       setIsShuffling(false);
       setView('post-shuffle');
     }, 1800);
@@ -2617,6 +3014,16 @@ export default function DailyShuffleFinal() {
       />
       <ViewToggle view={view} setView={setView} />
       <AchievementsPanel isOpen={showAchievements} onClose={() => setShowAchievements(false)} />
+        <ShareModal
+        isOpen={showShareCard}
+        onClose={() => setShowShareCard(false)}
+        matchCount={matchData ? matchData.positions : 0}
+        matchedWithShuffle={matchData ? matchData.matchedWithShuffle : null}
+        shuffleNumber={shuffleNumber}
+        totalShuffles={totalShuffles}
+        streak={streak}
+        matchedPositions={matchedPositions}
+      />
       <ProvenancePanel 
         isOpen={showProvenance} 
         onClose={() => setShowProvenance(false)} 
@@ -2643,7 +3050,7 @@ export default function DailyShuffleFinal() {
       {/* Content — sits above the fixed background layers */}
       <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', minHeight: '100%', flexGrow: 1 }}>
         {view === 'first-time' && <FirstTimeView onShuffle={handleShuffle} isShuffling={isShuffling} shuffleHash={shuffleHash} />}
-        {view === 'returning' && <ReturningUserView onShuffle={handleShuffle} isShuffling={isShuffling} streak={streak} onOpenAchievements={() => setShowAchievements(true)} shuffleHash={shuffleHash} />}
+        {view === 'returning' && <ReturningUserView onShuffle={handleShuffle} isShuffling={isShuffling} streak={streak} onOpenAchievements={() => setShowAchievements(true)} shuffleHash={shuffleHash} globalHighest={globalHighest} todayHighest={todayHighest} todayShuffles={todayShuffles} userData={userData} />}
         {view === 'post-shuffle' && (
           <PostShuffleResultView 
             deck={deck} 
@@ -2651,11 +3058,14 @@ export default function DailyShuffleFinal() {
             matchedWithShuffle={matchData ? matchData.matchedWithShuffle : null}
             matchedPositions={matchedPositions}
             totalShuffles={totalShuffles}
+            shuffleNumber={shuffleNumber}
+            onShare={() => setShowShareCard(true)}
             globalHighest={globalHighest}
             todayHighest={todayHighest}
             factoryCount={factoryCount}
             isNewPersonalBest={isNewPersonalBest}
-            isTodaysLeader={false}
+            streak={streak}
+            isTodaysLeader={isTodaysLeader}
             newAchievements={[]}
             onOpenAchievements={() => setShowAchievements(true)}
             shuffleHash={shuffleHash}
