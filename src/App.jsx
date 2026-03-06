@@ -2094,8 +2094,15 @@ const ShareModal = ({ isOpen, onClose, matchCount, matchedWithShuffle, shuffleNu
     }
     
     try {
+      const scale = window.devicePixelRatio || 2;
       const blob = await domtoimage.toBlob(cardRef.current, {
         bgcolor: '#0d0d1a',
+        width: cardRef.current.offsetWidth * scale,
+        height: cardRef.current.offsetHeight * scale,
+        style: {
+          transform: `scale(${scale})`,
+          transformOrigin: 'top left',
+        },
       });
       return blob;
     } finally {
