@@ -278,7 +278,7 @@ const Card = ({ card, index, isRevealed, isShuffling, isHighlighted = false, isD
     <div style={{ 
       width: '100%', 
       aspectRatio: '54 / 76',
-      perspective: '1000px', 
+      perspective: isMobile ? '200px' : '1000px',
       position: 'relative',
       transition: 'transform 0.3s ease, opacity 0.3s ease',
       transform: isHighlighted ? 'translateY(-8px) scale(1.08)' : 'translateY(0) scale(1)',
@@ -305,7 +305,7 @@ const Card = ({ card, index, isRevealed, isShuffling, isHighlighted = false, isD
             backfaceVisibility: 'hidden',
             borderRadius: '8px',
             backgroundColor: '#1a1a2e',
-            border: '2px solid #3d3d5c',
+            border: isMobile ? '1px solid #3d3d5c' : '2px solid #3d3d5c',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -313,8 +313,8 @@ const Card = ({ card, index, isRevealed, isShuffling, isHighlighted = false, isD
           }}
         >
           <div style={{
-            width: '40px',
-            height: '56px',
+             width: isMobile ? '60%' : '40px',
+            height: isMobile ? '60%' : '56px',
             border: '1px solid #4d4d6d',
             borderRadius: '4px',
             display: 'flex',
@@ -322,11 +322,11 @@ const Card = ({ card, index, isRevealed, isShuffling, isHighlighted = false, isD
             justifyContent: 'center',
             background: 'linear-gradient(135deg, #252542 0%, #1a1a2e 100%)',
           }}>
-            <span style={{ fontSize: '18px', color: '#6d6d8f', animation: isShuffling ? 'shimmerStar 0.4s ease infinite' : 'none' }}>✦</span>
+            <span style={{ fontSize: isMobile ? '8px' : '18px', color: '#6d6d8f', animation: isShuffling ? 'shimmerStar 0.4s ease infinite' : 'none' }}>✦</span>
           </div>
         </div>
         
-        {/* Card Front */}
+        {/* Card Front */}  
         <div
           style={{
             position: 'absolute',
