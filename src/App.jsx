@@ -2805,7 +2805,8 @@ const PostShuffleResultView = ({ deck, matchCount, matchedWithShuffle, matchedPo
             border: '1px solid rgba(251, 113, 133, 0.2)',
             borderTop: '1px solid rgba(251, 113, 133, 0.3)',
             borderRadius: '50px',
-            flex: '1 1 0',
+            flex: isMobile ? '1 1 40%' : '1 1 0',
+            order: isMobile ? 1 : 0,
             justifyContent: 'center',
           }}>
             <span style={{ fontSize: '18px' }}>🔥</span>
@@ -2830,7 +2831,8 @@ const PostShuffleResultView = ({ deck, matchCount, matchedWithShuffle, matchedPo
             alignItems: 'center',
             justifyContent: 'center',
             gap: '8px',
-            flex: '1.3 1 0',
+            flex: isMobile ? '1 1 100%' : '1.3 1 0',
+            order: isMobile ? 3 : 0,
             boxShadow: '0 0 20px rgba(167, 139, 250, 0.15), 0 0 40px rgba(167, 139, 250, 0.08)',
           }}>
             Share Result
@@ -2856,7 +2858,8 @@ const PostShuffleResultView = ({ deck, matchCount, matchedWithShuffle, matchedPo
               alignItems: 'center',
               justifyContent: 'center',
               gap: '8px',
-              flex: '1 1 0',
+              flex: isMobile ? '1 1 40%' : '1 1 0',
+              order: isMobile ? 2 : 0,
             }}
           >
             🏆 Trophy Cabinet
