@@ -276,8 +276,8 @@ const Card = ({ card, index, isRevealed, isShuffling, isHighlighted = false, isD
   
   return (
     <div style={{ 
-      width: '54px', 
-      height: '76px', 
+      width: '100%', 
+      aspectRatio: '54 / 76',
       perspective: '1000px', 
       position: 'relative',
       transition: 'transform 0.3s ease, opacity 0.3s ease',
@@ -2365,7 +2365,7 @@ const PostShuffleResultView = ({ deck, matchCount, matchedWithShuffle, matchedPo
       <div key={replayKey}>
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(13, 54px)',
+          gridTemplateColumns: 'repeat(13, 1fr)',
           gap: '8px',
           marginBottom: '24px',
           justifyContent: 'center',
