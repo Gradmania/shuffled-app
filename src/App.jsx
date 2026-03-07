@@ -2996,6 +2996,7 @@ export default function DailyShuffleFinal() {
       setIsTodaysLeader(data.user ? data.user.isTodaysLeader : false);
       setIsShuffling(false);
       setView('post-shuffle');
+      setTimeout(() => window.scrollTo(0, 0), 50);
     }, 1800);
   };
 
