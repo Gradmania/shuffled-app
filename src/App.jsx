@@ -263,7 +263,7 @@ const FloatingSuits = ({ size = 'large' }) => {
 };
 
 // Card component with flip animation + highlight support for Finds
-const Card = ({ card, index, isRevealed, isShuffling, isHighlighted = false, isDimmed = false, isMatched = false, matchTier = null, matchGlowDelay = 0 }) => {
+const Card = ({ card, index, isRevealed, isShuffling, isHighlighted = false, isDimmed = false, isMatched = false, matchTier = null, matchGlowDelay = 0, isMobile = false }) => {
   const delay = index * 0.06;
   const flipDuration = 0.6;
   const suitDelay = delay + flipDuration + 0.15;
@@ -389,9 +389,9 @@ const Card = ({ card, index, isRevealed, isShuffling, isHighlighted = false, isD
           >
             {card && (
               <>
-                <span style={{ position: 'absolute', top: '4px', left: '5px', fontSize: '14px', lineHeight: 1, opacity: 0, animation: isRevealed ? `fadeIn 0.3s ease ${suitDelay}s forwards` : 'none' }}>{card.rank}</span>
-                <span style={{ fontSize: '28px', marginTop: '2px', opacity: 0, animation: isRevealed ? `suitPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) ${suitDelay}s forwards` : 'none' }}>{card.suit}</span>
-                <span style={{ position: 'absolute', bottom: '4px', right: '5px', fontSize: '14px', transform: 'rotate(180deg)', lineHeight: 1, opacity: 0, animation: isRevealed ? `fadeIn 0.3s ease ${suitDelay}s forwards` : 'none' }}>{card.rank}</span>
+                <span style={{ position: 'absolute', top: '4px', left: '5px', fontSize: isMobile ? '0px' : '14px', lineHeight: 1, opacity: 0, animation: isRevealed ? `fadeIn 0.3s ease ${suitDelay}s forwards` : 'none' }}>{card.rank}</span>
+                <span style={{ fontSize: isMobile ? '14px' : '28px', marginTop: '2px', opacity: 0, animation: isRevealed ? `suitPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) ${suitDelay}s forwards` : 'none' }}>{card.suit}</span>
+                <span style={{ position: 'absolute', bottom: '4px', right: '5px', fontSize: isMobile ? '0px' : '14px', transform: 'rotate(180deg)', lineHeight: 1, opacity: 0, animation: isRevealed ? `fadeIn 0.3s ease ${suitDelay}s forwards` : 'none' }}>{card.rank}</span>
               </>
             )}
           </div>
@@ -2238,7 +2238,7 @@ const ShareModal = ({ isOpen, onClose, matchCount, matchedWithShuffle, shuffleNu
 };
 
 // ============ POST-SHUFFLE RESULT VIEW (v4 design) ============
-const PostShuffleResultView = ({ deck, matchCount, matchedWithShuffle, matchedPositions: realMatchedPositions, totalShuffles, shuffleNumber, globalHighest, todayHighest, factoryCount, isNewPersonalBest, isTodaysLeader, newAchievements, onOpenAchievements, shuffleHash, onShare, detectedHands, finds, streak }) => {
+const PostShuffleResultView = ({ deck, matchCount, matchedWithShuffle, matchedPositions: realMatchedPositions, totalShuffles, shuffleNumber, globalHighest, todayHighest, factoryCount, isNewPersonalBest, isTodaysLeader, newAchievements, onOpenAchievements, shuffleHash, onShare, detectedHands, finds, streak, isMobile }) => {
   const [isRevealed, setIsRevealed] = useState(false);
   const [activeFind, setActiveFind] = useState(null);
   const [showFinds, setShowFinds] = useState(false);
@@ -2366,10 +2366,10 @@ const PostShuffleResultView = ({ deck, matchCount, matchedWithShuffle, matchedPo
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(13, 1fr)',
-          gap: '8px',
+          gap: isMobile ? '3px' : '8px',
           marginBottom: '24px',
           justifyContent: 'center',
-          padding: '16px 24px',
+          padding: isMobile ? '8px 4px' : '16px 24px',
           overflow: 'visible',
         }}>
           {deck.map((card, index) => (
@@ -2384,6 +2384,7 @@ const PostShuffleResultView = ({ deck, matchCount, matchedWithShuffle, matchedPo
               isMatched={matchPositions.has(index)}
               matchTier={tierKey}
               matchGlowDelay={matchGlowStart}
+              isMobile={isMobile}
             />
           ))}
         </div>
@@ -2919,6 +2920,13 @@ const ViewToggle = ({ view, setView }) => (
 
 // ============ MAIN COMPONENT ============
 export default function DailyShuffleFinal() {
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  const isMobile = windowWidth < 600;
   const [view, setView] = useState('first-time');
   const [deck, setDeck] = useState(shuffleDeck(generateDeck()));
   const [isShuffling, setIsShuffling] = useState(false);
@@ -3079,6 +3087,7 @@ export default function DailyShuffleFinal() {
             shuffleHash={shuffleHash}
             detectedHands={[]}
             finds={finds}
+            isMobile={isMobile}
           />
         )}
 
