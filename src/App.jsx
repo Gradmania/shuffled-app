@@ -263,7 +263,7 @@ const FloatingSuits = ({ size = 'large' }) => {
 };
 
 // Card component with flip animation + highlight support for Finds
-const Card = ({ card, index, isRevealed, isShuffling, isHighlighted = false, isDimmed = false, isMatched = false, matchTier = null, matchGlowDelay = 0, isMobile = false }) => {
+  const Card = ({ card, index, isRevealed, isShuffling, isHighlighted = false, isDimmed = false, isMatched = false, matchTier = null, matchGlowDelay = 0, isMobile = false, skipAnimation = false }) => {
   const delay = index * 0.06;
   const flipDuration = 0.6;
   const suitDelay = delay + flipDuration + 0.15;
@@ -291,7 +291,7 @@ const Card = ({ card, index, isRevealed, isShuffling, isHighlighted = false, isD
           height: '100%',
           position: 'relative',
           transformStyle: 'preserve-3d',
-          transition: isShuffling ? 'transform 0.1s ease' : `transform ${flipDuration}s cubic-bezier(0.4, 0.0, 0.2, 1) ${delay}s`,
+          transition: skipAnimation ? 'none' : isShuffling ? 'transform 0.1s ease' : `transform ${flipDuration}s cubic-bezier(0.4, 0.0, 0.2, 1) ${delay}s`,
           transform: isRevealed ? 'rotateY(180deg)' : isShuffling ? `rotateY(${Math.sin(index * 0.7) * 15}deg) rotateX(${Math.cos(index * 0.5) * 10}deg)` : 'rotateY(0deg)',
           zIndex: 1,
         }}
@@ -389,9 +389,9 @@ const Card = ({ card, index, isRevealed, isShuffling, isHighlighted = false, isD
           >
             {card && (
               <>
-                <span style={{ position: 'absolute', top: '4px', left: '5px', fontSize: isMobile ? '0px' : '14px', lineHeight: 1, opacity: 0, animation: isRevealed ? `fadeIn 0.3s ease ${suitDelay}s forwards` : 'none' }}>{card.rank}</span>
-                <span style={{ fontSize: isMobile ? '14px' : '28px', marginTop: '2px', opacity: 0, animation: isRevealed ? `suitPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) ${suitDelay}s forwards` : 'none' }}>{card.suit}</span>
-                <span style={{ position: 'absolute', bottom: '4px', right: '5px', fontSize: isMobile ? '0px' : '14px', transform: 'rotate(180deg)', lineHeight: 1, opacity: 0, animation: isRevealed ? `fadeIn 0.3s ease ${suitDelay}s forwards` : 'none' }}>{card.rank}</span>
+                <span style={{ position: 'absolute', top: '4px', left: '5px', fontSize: isMobile ? '0px' : '14px', lineHeight: 1, opacity: skipAnimation ? 1 : 0, animation: skipAnimation ? 'none' : isRevealed ? `fadeIn 0.3s ease ${suitDelay}s forwards` : 'none' }}>{card.rank}</span>
+                <span style={{ fontSize: isMobile ? '14px' : '28px', marginTop: '2px', opacity: skipAnimation ? 1 : 0, animation: skipAnimation ? 'suitPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0s forwards' : isRevealed ? `suitPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) ${suitDelay}s forwards` : 'none' }}>{card.suit}</span>
+                <span style={{ position: 'absolute', bottom: '4px', right: '5px', fontSize: isMobile ? '0px' : '14px', transform: 'rotate(180deg)', lineHeight: 1, opacity: skipAnimation ? 1 : 0, animation: skipAnimation ? 'none' : isRevealed ? `fadeIn 0.3s ease ${suitDelay}s forwards` : 'none' }}>{card.rank}</span>
               </>
             )}
           </div>
@@ -1290,7 +1290,7 @@ const FindBadge = ({ find, isActive, onHover, onLeave }) => (
       <div style={{ fontSize: '13px', fontWeight: '600', color: isActive ? '#fff' : 'rgba(255,255,255,0.8)', lineHeight: 1.2 }}>
         {find.name}
       </div>
-      <div style={{ fontSize: '10px', color: isActive ? find.color : 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+      <div style={{ fontSize: '10px', color: find.color, opacity: isActive ? 1 : 0.7, textTransform: 'uppercase', letterSpacing: '0.5px', transition: 'opacity 0.2s ease' }}>
         {find.rarity}
       </div>
     </div>
@@ -1300,6 +1300,8 @@ const FindBadge = ({ find, isActive, onHover, onLeave }) => (
 // ============ FINDS BAR (horizontal row of find badges) ============
 // ============ FACTORY POSITION INDICATOR ============
 const FactoryIndicator = ({ count }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+  
   if (count === null || count === undefined) return null;
   const label = FACTORY_LABELS[count] || FACTORY_LABELS[6];
   const isNotable = count >= 3;
@@ -1366,8 +1368,9 @@ const FactoryIndicator = ({ count }) => {
             {count}
           </span>
           <span style={{
-            fontSize: '11px',
-            color: count >= 2 ? 'rgba(196, 224, 249, 0.35)' : 'rgba(255,255,255,0.2)',
+            fontSize: '12px',
+            fontWeight: '500',
+            color: count >= 2 ? 'rgba(196, 224, 249, 0.5)' : 'rgba(255,255,255,0.3)',
           }}>
             {count === 1 ? 'card home' : 'cards home'}
           </span>
@@ -1375,26 +1378,105 @@ const FactoryIndicator = ({ count }) => {
         {(hasLabel || isBlankSlate) && (
           <span style={{
             fontFamily: "'Cormorant Garamond', Georgia, serif",
-            fontSize: '10px',
+            fontSize: '11px',
             fontStyle: 'italic',
+            fontWeight: '600',
             color: isSpecial
-              ? 'rgba(196, 224, 249, 0.6)'
+              ? 'rgba(196, 224, 249, 0.7)'
               : isNotable
-                ? 'rgba(196, 224, 249, 0.4)'
-                : 'rgba(196, 224, 249, 0.3)',
+                ? 'rgba(196, 224, 249, 0.55)'
+                : 'rgba(196, 224, 249, 0.45)',
             letterSpacing: '0.3px',
           }}>
             {isBlankSlate ? 'Blank Slate' : label.name}
           </span>
         )}
       </div>
+
+      {/* Info icon */}
+      <span
+        onClick={(e) => {
+          e.stopPropagation();
+          setShowTooltip(!showTooltip);
+        }}
+        style={{
+          fontSize: '14px',
+          color: 'rgba(196, 224, 249, 0.45)',
+          cursor: 'pointer',
+          transition: 'color 0.2s ease',
+          marginLeft: '2px',
+          userSelect: 'none',
+        }}
+        onMouseEnter={e => e.currentTarget.style.color = 'rgba(196, 224, 249, 0.8)'}
+        onMouseLeave={e => e.currentTarget.style.color = 'rgba(196, 224, 249, 0.3)'}
+      >
+        ⓘ
+      </span>
+
+      {/* Tooltip */}
+      {showTooltip && (
+        <>
+          {/* Invisible backdrop to close on tap-away */}
+          <div
+            onClick={() => setShowTooltip(false)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 99,
+            }}
+          />
+          <div style={{
+            position: 'absolute',
+            bottom: 'calc(100% + 10px)',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '260px',
+            padding: '12px 14px',
+            background: 'rgba(15, 15, 30, 0.95)',
+            border: '1px solid rgba(196, 224, 249, 0.15)',
+            borderRadius: '10px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+            zIndex: 100,
+            animation: 'fadeIn 0.2s ease',
+          }}>
+            <p style={{
+              margin: 0,
+              fontFamily: "'Inter', sans-serif",
+              fontSize: '12px',
+              lineHeight: 1.5,
+              color: 'rgba(255,255,255,0.7)',
+            }}>
+              A new deck of cards has a fixed order. After shuffling, <span style={{ color: '#c4e0f9', fontWeight: '600' }}>{count}</span> of your cards landed back in their original position.
+            </p>
+            {/* Arrow pointing down */}
+            <div style={{
+              position: 'absolute',
+              bottom: '-6px',
+              left: '50%',
+              transform: 'translateX(-50%) rotate(45deg)',
+              width: '10px',
+              height: '10px',
+              background: 'rgba(15, 15, 30, 0.95)',
+              borderRight: '1px solid rgba(196, 224, 249, 0.15)',
+              borderBottom: '1px solid rgba(196, 224, 249, 0.15)',
+            }} />
+          </div>
+        </>
+      )}
     </div>
   );
 };
 
-const FindsBar = ({ finds, activeFind, setActiveFind, isVisible, onReplay, showReplayBtn, factoryCount }) => {
+const FindsBar = ({ finds, activeFind, setActiveFind, isVisible, onReplay, showReplayBtn, factoryCount, isMobile }) => {
+  const [expanded, setExpanded] = useState(false);
+  
   if (!finds || finds.length === 0) return null;
   const newCount = finds.filter(f => f.isNew).length;
+  
+  const MAX_VISIBLE = 3;
+  const hasMore = finds.length > MAX_VISIBLE;
+  const visibleFinds = expanded ? finds : finds.slice(0, MAX_VISIBLE);
+  const hiddenCount = finds.length - MAX_VISIBLE;
   
   return (
     <div style={{ position: 'relative', marginBottom: '28px' }}>
@@ -1439,7 +1521,7 @@ const FindsBar = ({ finds, activeFind, setActiveFind, isVisible, onReplay, showR
             )}
           </div>
         </div>
-        {finds.map((find) => (
+        {visibleFinds.map((find) => (
           <FindBadge
             key={find.id}
             find={find}
@@ -1448,6 +1530,69 @@ const FindsBar = ({ finds, activeFind, setActiveFind, isVisible, onReplay, showR
             onLeave={() => setActiveFind(null)}
           />
         ))}
+        
+        {/* "+X more" pill — only shows when truncated */}
+        {hasMore && !expanded && (
+          <button
+            onClick={() => setExpanded(true)}
+            style={{
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '12px',
+              padding: '10px 14px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.2s ease',
+              color: 'rgba(255,255,255,0.5)',
+              fontSize: '13px',
+              fontWeight: '600',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)';
+              e.currentTarget.style.color = 'rgba(255,255,255,0.7)';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+              e.currentTarget.style.color = 'rgba(255,255,255,0.5)';
+            }}
+          >
+            +{hiddenCount} more
+          </button>
+        )}
+        
+        {/* "Show less" pill — only shows when expanded */}
+        {hasMore && expanded && (
+          <button
+            onClick={() => setExpanded(false)}
+            style={{
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '12px',
+              padding: '8px 12px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              transition: 'all 0.2s ease',
+              color: 'rgba(255,255,255,0.4)',
+              fontSize: '11px',
+              fontWeight: '600',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+              e.currentTarget.style.color = 'rgba(255,255,255,0.6)';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+              e.currentTarget.style.color = 'rgba(255,255,255,0.4)';
+            }}
+          >
+            Show less
+          </button>
+        )}
         
         {/* Divider before factory stat */}
         {factoryCount !== null && factoryCount !== undefined && (
@@ -1481,10 +1626,10 @@ const FindsBar = ({ finds, activeFind, setActiveFind, isVisible, onReplay, showR
             <button
               onClick={onReplay}
               style={{
-                background: 'rgba(167, 139, 250, 0.08)',
-                border: '1px solid rgba(167, 139, 250, 0.2)',
+                background: 'rgba(167, 139, 250, 0.1)',
+                border: '1px solid rgba(167, 139, 250, 0.28)',
                 borderRadius: '50px',
-                padding: '6px 14px',
+                padding: '8px 18px',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -1505,16 +1650,16 @@ const FindsBar = ({ finds, activeFind, setActiveFind, isVisible, onReplay, showR
               }}
             >
               <span style={{ 
-                fontSize: '13px', 
+                fontSize: '15px', 
                 color: '#a78bfa',
                 display: 'inline-block',
               }}>↻</span>
               <span style={{
                 fontFamily: "'Cormorant Garamond', Georgia, serif",
-                fontSize: '12px',
+                fontSize: '13px',
                 fontStyle: 'italic',
                 color: '#a78bfa',
-                opacity: 0.8,
+                opacity: 1,
               }}>
                 Watch again
               </span>
@@ -1523,6 +1668,81 @@ const FindsBar = ({ finds, activeFind, setActiveFind, isVisible, onReplay, showR
         )}
       </div>
     </div>
+  );
+};
+
+const CardZoomOverlay = ({ deck, cardIndex, onClose, matchPositions, tierKey, matchGlowStart, isRevealed }) => {
+  if (cardIndex === null || cardIndex === undefined) return null;
+  
+  // Build array of indices to show: tapped card + 1 each side
+  const indices = [];
+  if (cardIndex > 0) indices.push(cardIndex - 1);
+  indices.push(cardIndex);
+  if (cardIndex < 51) indices.push(cardIndex + 1);
+  
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0, 0, 0, 0.85)',
+          zIndex: 1000,
+          animation: 'fadeIn 0.2s ease',
+        }}
+      />
+      {/* Card strip */}
+      <div
+        onClick={onClose}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 1001,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '12px',
+          padding: '0 32px',
+        }}
+      >
+        {indices.map((i) => (
+          <div
+            key={i}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '90px',
+              opacity: i === cardIndex ? 1 : 0.6,
+              transform: i === cardIndex ? 'scale(1)' : 'scale(0.9)',
+              transition: 'all 0.2s ease',
+            }}
+          >
+             <Card
+              card={deck[i]}
+              index={0}
+              isRevealed={true}
+              isShuffling={false}
+              isMatched={matchPositions.has(i)}
+              matchTier={tierKey}
+              matchGlowDelay={0}
+              isMobile={false}
+              skipAnimation={true}
+            />
+            {/* Position label */}
+            <div style={{
+              textAlign: 'center',
+              marginTop: '8px',
+              fontSize: '11px',
+              color: i === cardIndex ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.25)',
+              fontFamily: "'Inter', sans-serif",
+            }}>
+              #{i + 1}
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
   );
 };
 
@@ -2246,6 +2466,7 @@ const PostShuffleResultView = ({ deck, matchCount, matchedWithShuffle, matchedPo
   const [replayKey, setReplayKey] = useState(0);
   const [showTicker, setShowTicker] = useState(false);
   const [showReplayBtn, setShowReplayBtn] = useState(false);
+  const [zoomedCardIndex, setZoomedCardIndex] = useState(null);
   const [liveCount, setLiveCount] = useState(4);
   const [tickerFlash, setTickerFlash] = useState(false);
   
@@ -2373,33 +2594,39 @@ const PostShuffleResultView = ({ deck, matchCount, matchedWithShuffle, matchedPo
           overflow: 'visible',
         }}>
           {deck.map((card, index) => (
-            <Card 
-              key={index} 
-              card={card} 
-              index={index} 
-              isRevealed={isRevealed} 
-              isShuffling={false}
-              isHighlighted={highlightedPositions.has(index)}
-              isDimmed={activeFind !== null && !highlightedPositions.has(index)}
-              isMatched={matchPositions.has(index)}
-              matchTier={tierKey}
-              matchGlowDelay={matchGlowStart}
-              isMobile={isMobile}
-            />
+            <div
+              key={index}
+              onClick={isMobile && isRevealed ? () => setZoomedCardIndex(index) : undefined}
+              style={{ cursor: isMobile && isRevealed ? 'pointer' : 'default' }}
+            >
+              <Card 
+                card={card} 
+                index={index} 
+                isRevealed={isRevealed} 
+                isShuffling={false}
+                isHighlighted={highlightedPositions.has(index)}
+                isDimmed={activeFind !== null && !highlightedPositions.has(index)}
+                isMatched={matchPositions.has(index)}
+                matchTier={tierKey}
+                matchGlowDelay={matchGlowStart}
+                isMobile={isMobile}
+              />
+            </div>
           ))}
         </div>
       </div>
 
       {/* Finds Bar — includes replay button */}
       <FindsBar 
-        finds={finds}
-        activeFind={activeFind}
-        setActiveFind={setActiveFind}
-        isVisible={showFinds}
-        onReplay={handleReplay}
-        showReplayBtn={showReplayBtn}
-        factoryCount={factoryCount}
-      />
+  finds={finds}
+  activeFind={activeFind}
+  setActiveFind={setActiveFind}
+  isVisible={showFinds}
+  onReplay={handleReplay}
+  showReplayBtn={showReplayBtn}
+  factoryCount={factoryCount}
+  isMobile={isMobile}
+/>
 
       {/* ============ MAIN RESULT PANEL ============ */}
       <div style={{
@@ -2879,6 +3106,18 @@ const PostShuffleResultView = ({ deck, matchCount, matchedWithShuffle, matchedPo
           Return tomorrow to continue the experiment
         </div>
       </div>
+      {/* Card zoom overlay — mobile tap to see full card */}
+      {isMobile && zoomedCardIndex !== null && (
+        <CardZoomOverlay
+          deck={deck}
+          cardIndex={zoomedCardIndex}
+          onClose={() => setZoomedCardIndex(null)}
+          matchPositions={matchPositions}
+          tierKey={tierKey}
+          matchGlowStart={matchGlowStart}
+          isRevealed={true}
+        />
+      )}
     </div>
   );
 };
@@ -3099,7 +3338,7 @@ export default function DailyShuffleFinal() {
           <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '12px', fontStyle: 'italic', color: 'rgba(255,255,255,0.25)', marginBottom: '8px' }}>
             A daily experiment in impossibility
           </div>
-          <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.12)', letterSpacing: '1px' }}>
+          <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.12)', letterSpacing: '1px', wordBreak: 'break-all', padding: '0 20px' }}>
             52! = 80,658,175,170,943,878,571,660,636,856,403,766,975,289,505,440,883,277,824,000,000,000,000
           </div>
         </div>
