@@ -36,6 +36,17 @@ const getTierForMatch = (count) => {
   return tiers[count] || 'ghost';
 };
 
+const getEffectLevel = (tierKey) => {
+  const effectMap = {
+    ghost: 'flat', trace: 'flat', glimmer: 'flat', echo: 'flat', signal: 'flat',
+    resonance: 'foil', nova: 'foil',
+    anomaly: 'holo', convergence: 'holo',
+    singularity: 'prismatic', contact: 'prismatic', entanglement: 'prismatic',
+    impossible: 'prismatic', unknown: 'prismatic',
+  };
+  return effectMap[tierKey] || 'flat';
+};
+
 const getOddsForMatch = (count) => {
   const odds = {
     0: '1 in 3', 1: '1 in 3', 2: '1 in 5',
@@ -399,21 +410,31 @@ const FloatingSuits = ({ size = 'large' }) => {
       </div>
       
       {/* Match glow — on outer wrapper, outside overflow:hidden */}
-      {isMatched && !isHighlighted && (
-        <div
-          style={{
-            position: 'absolute',
-            inset: '-3px',
-            borderRadius: '11px',
-            border: `2px solid ${matchColor}`,
-            boxShadow: `0 0 12px ${matchGlow}, 0 0 24px ${matchGlow}`,
-            zIndex: 2,
-            pointerEvents: 'none',
-            opacity: 0,
-            animation: `fadeIn 0.6s ease ${matchGlowDelay}s forwards`,
-          }}
-        />
-      )}
+      {isMatched && !isHighlighted && (() => {
+        const effectLevel = matchTier ? getEffectLevel(matchTier) : 'flat';
+        const effectDelay = matchGlowDelay + 0.6;
+        const effectAnim = effectLevel === 'foil' ? `, foilCardGlow 3s ease-in-out ${effectDelay}s infinite`
+          : effectLevel === 'holo' ? `, holoCardGlow 4s ease-in-out ${effectDelay}s infinite`
+          : effectLevel === 'prismatic' ? `, prismaticCardGlow 6s linear ${effectDelay}s infinite`
+          : '';
+        return (
+          <div
+            style={{
+              position: 'absolute',
+              inset: '-3px',
+              borderRadius: '11px',
+              border: `2px solid ${matchColor}`,
+              boxShadow: `0 0 12px ${matchGlow}, 0 0 24px ${matchGlow}`,
+              zIndex: 2,
+              pointerEvents: 'none',
+              opacity: 0,
+              animation: `fadeIn 0.6s ease ${matchGlowDelay}s forwards${effectAnim}`,
+              '--match-color': matchColor,
+              '--match-glow': matchGlow,
+            }}
+          />
+        );
+      })()}
     </div>
   );
 };
@@ -2194,9 +2215,14 @@ const ShareCard = ({ matchCount, matchedWithShuffle, shuffleNumber, totalShuffle
 
       {/* Big number */}
       <div style={{ textAlign:'center', marginBottom:'8px', position:'relative' }}>
-        <span style={{ fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'56px', fontWeight:'300', lineHeight:1, color: tier.isGradient ? '#fff' : tier.color, background: tier.isGradient ? 'linear-gradient(135deg, #a78bfa, #fb7185, #fbbf24)' : 'none', WebkitBackgroundClip: tier.isGradient ? 'text' : 'none', WebkitTextFillColor: tier.isGradient ? 'transparent' : 'inherit', textShadow: tier.isGradient ? 'none' : `0 0 40px ${tier.glow}` }}>
-          {matchCount}
-        </span>
+        {(() => {
+          const effect = getEffectLevel(tierKey);
+          const base = { fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'56px', fontWeight:'300', lineHeight:1 };
+          if (effect === 'foil') return <span style={{ ...base, background:`linear-gradient(110deg, ${tier.color} 20%, #fff 48%, #fff 52%, ${tier.color} 80%)`, WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', filter:`drop-shadow(0 0 16px ${tier.glow})` }}>{matchCount}</span>;
+          if (effect === 'holo') return <span style={{ ...base, background:`linear-gradient(110deg, #c084fc, ${tier.color}, #60a5fa, #fb7185)`, WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', filter:`drop-shadow(0 0 20px ${tier.glow})` }}>{matchCount}</span>;
+          if (effect === 'prismatic') return <span style={{ ...base, background:'linear-gradient(110deg, #a78bfa, #fb7185, #fbbf24, #34d399, #60a5fa)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', filter:'drop-shadow(0 0 24px rgba(255,255,255,0.35))' }}>{matchCount}</span>;
+          return <span style={{ ...base, color: tier.isGradient ? '#fff' : tier.color, background: tier.isGradient ? 'linear-gradient(135deg, #a78bfa, #fb7185, #fbbf24)' : 'none', WebkitBackgroundClip: tier.isGradient ? 'text' : 'none', WebkitTextFillColor: tier.isGradient ? 'transparent' : 'inherit', textShadow: tier.isGradient ? 'none' : `0 0 40px ${tier.glow}` }}>{matchCount}</span>;
+        })()}
         <span style={{ fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:'22px', fontWeight:'300', color:'rgba(255,255,255,0.35)', marginLeft:'4px' }}>
           of 52
         </span>
@@ -2210,7 +2236,14 @@ const ShareCard = ({ matchCount, matchedWithShuffle, shuffleNumber, totalShuffle
       {/* Tier + odds pill */}
       <div style={{ display:'flex', justifyContent:'center', marginBottom:'20px', position:'relative' }}>
         <div style={{ width:'260px', padding:'10px 16px', borderRadius:'10px', background: tier.isGradient ? 'linear-gradient(135deg, rgba(167,139,250,0.12), rgba(251,113,133,0.12), rgba(251,191,36,0.12))' : `${tier.color}10`, border:`1px solid ${tier.isGradient ? 'rgba(251,191,36,0.25)' : tier.color}25`, display:'flex', alignItems:'center', justifyContent:'center', gap:'8px' }}>
-          <span style={{ fontSize:'11px', fontWeight:'600', color: tier.isGradient ? '#fbbf24' : tier.color, letterSpacing:'1.5px', textTransform:'uppercase' }}>{tier.name}</span>
+          {(() => {
+            const effect = getEffectLevel(tierKey);
+            const base = { fontSize:'11px', fontWeight:'600', letterSpacing:'1.5px', textTransform:'uppercase' };
+            if (effect === 'foil') return <span style={{ ...base, background:`linear-gradient(110deg, ${tier.color} 20%, #fff 48%, #fff 52%, ${tier.color} 80%)`, WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>{tier.name}</span>;
+            if (effect === 'holo') return <span style={{ ...base, background:`linear-gradient(110deg, #c084fc, ${tier.color}, #60a5fa, #fb7185)`, WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>{tier.name}</span>;
+            if (effect === 'prismatic') return <span style={{ ...base, background:'linear-gradient(110deg, #a78bfa, #fb7185, #fbbf24, #34d399, #60a5fa)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>{tier.name}</span>;
+            return <span style={{ ...base, color: tier.isGradient ? '#fbbf24' : tier.color }}>{tier.name}</span>;
+          })()}
           <span style={{ width:'3px', height:'3px', borderRadius:'50%', background:'rgba(255,255,255,0.2)' }} />
           <span style={{ color:'rgba(255,255,255,0.4)', fontWeight:'400', fontSize:'11px', letterSpacing:'0.5px' }}>{odds}</span>
         </div>
@@ -2727,21 +2760,53 @@ const PostShuffleResultView = ({ deck, matchCount, matchedWithShuffle, matchedPo
                 {/* Large match count */}
                 <div style={{ marginBottom: '16px' }}>
                   <div style={{ marginBottom: '6px' }}>
-                    <span style={{
-                      fontFamily: "'Cormorant Garamond', Georgia, serif",
-                      fontSize: '72px',
-                      fontWeight: '300',
-                      lineHeight: 1,
-                      color: tier.isGradient ? '#fff' : tier.color,
-                      background: tier.isGradient 
-                        ? 'linear-gradient(135deg, #a78bfa, #fb7185, #fbbf24)' 
-                        : 'none',
-                      WebkitBackgroundClip: tier.isGradient ? 'text' : 'none',
-                      WebkitTextFillColor: tier.isGradient ? 'transparent' : 'inherit',
-                      textShadow: tier.isGradient ? 'none' : `0 0 40px ${tier.glow}`,
-                    }}>
-                      {matchCount}
-                    </span>
+                    {(() => {
+                      const effect = getEffectLevel(tierKey);
+                      if (effect === 'foil') return (
+                        <span style={{
+                          fontFamily: "'Cormorant Garamond', Georgia, serif",
+                          fontSize: '72px', fontWeight: '300', lineHeight: 1,
+                          background: `linear-gradient(110deg, ${tier.color} 0%, ${tier.color} 35%, #fff 50%, ${tier.color} 65%, ${tier.color} 100%)`,
+                          backgroundSize: '250% 100%',
+                          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                          animation: 'foilSweep 3s ease-in-out infinite',
+                          filter: `drop-shadow(0 0 20px ${tier.glow})`,
+                        }}>{matchCount}</span>
+                      );
+                      if (effect === 'holo') return (
+                        <span style={{
+                          fontFamily: "'Cormorant Garamond', Georgia, serif",
+                          fontSize: '72px', fontWeight: '300', lineHeight: 1,
+                          background: `linear-gradient(110deg, ${tier.color}, #c084fc, #60a5fa, ${tier.color}, #fb7185, ${tier.color})`,
+                          backgroundSize: '300% 100%',
+                          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                          animation: 'holoShift 4s ease-in-out infinite',
+                          filter: `drop-shadow(0 0 24px ${tier.glow})`,
+                        }}>{matchCount}</span>
+                      );
+                      if (effect === 'prismatic') return (
+                        <span style={{
+                          fontFamily: "'Cormorant Garamond', Georgia, serif",
+                          fontSize: '72px', fontWeight: '300', lineHeight: 1,
+                          background: 'linear-gradient(110deg, #a78bfa, #fb7185, #fbbf24, #34d399, #60a5fa, #c084fc, #fb7185, #fbbf24)',
+                          backgroundSize: '400% 100%',
+                          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                          animation: 'prismaticFlow 5s linear infinite',
+                          filter: 'drop-shadow(0 0 30px rgba(255, 255, 255, 0.4))',
+                        }}>{matchCount}</span>
+                      );
+                      return (
+                        <span style={{
+                          fontFamily: "'Cormorant Garamond', Georgia, serif",
+                          fontSize: '72px', fontWeight: '300', lineHeight: 1,
+                          color: tier.isGradient ? '#fff' : tier.color,
+                          background: tier.isGradient ? 'linear-gradient(135deg, #a78bfa, #fb7185, #fbbf24)' : 'none',
+                          WebkitBackgroundClip: tier.isGradient ? 'text' : 'none',
+                          WebkitTextFillColor: tier.isGradient ? 'transparent' : 'inherit',
+                          textShadow: tier.isGradient ? 'none' : `0 0 40px ${tier.glow}`,
+                        }}>{matchCount}</span>
+                      );
+                    })()}
                     <span style={{
                       fontFamily: "'Cormorant Garamond', Georgia, serif",
                       fontSize: '28px',
@@ -2757,33 +2822,57 @@ const PostShuffleResultView = ({ deck, matchCount, matchedWithShuffle, matchedPo
                   </div>
                 </div>
                 
-                {/* Rarity Badge — tier name Cormorant */}
-                <div style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  padding: '8px 16px',
-                  borderRadius: '20px',
-                  background: tier.isGradient 
-                    ? 'linear-gradient(135deg, rgba(167,139,250,0.2), rgba(251,113,133,0.2), rgba(251,191,36,0.2))'
-                    : `${tier.color}20`,
-                  border: `1px solid ${tier.isGradient ? 'rgba(251,191,36,0.3)' : tier.color}50`,
-                  boxShadow: `0 0 20px ${tier.glow}`,
-                }}>
-                  <span style={{
+                {/* Rarity Badge — tier name with effect */}
+                {(() => {
+                  const effect = getEffectLevel(tierKey);
+                  const badgeBase = {
+                    display: 'inline-flex', alignItems: 'center', gap: '10px',
+                    padding: '8px 16px', borderRadius: '20px',
+                    background: tier.isGradient
+                      ? 'linear-gradient(135deg, rgba(167,139,250,0.2), rgba(251,113,133,0.2), rgba(251,191,36,0.2))'
+                      : `${tier.color}20`,
+                    border: `1px solid ${tier.isGradient ? 'rgba(251,191,36,0.3)' : tier.color}50`,
+                    boxShadow: effect === 'prismatic' ? undefined : `0 0 20px ${tier.glow}`,
+                    position: 'relative', overflow: 'hidden',
+                    ...(effect === 'prismatic' ? { animation: 'prismaticGlow 5s linear infinite' } : {}),
+                  };
+                  const textFlat = {
                     fontFamily: "'Cormorant Garamond', Georgia, serif",
-                    fontSize: '13px',
-                    fontWeight: '600',
+                    fontSize: '13px', fontWeight: '600',
                     color: tier.isGradient ? '#fbbf24' : tier.color,
-                    letterSpacing: '2px',
-                    textTransform: 'uppercase',
-                  }}>
-                    {tier.name}
-                  </span>
-                  <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>
-                    {odds}
-                  </span>
-                </div>
+                    letterSpacing: '2px', textTransform: 'uppercase',
+                  };
+                  const textGradient = (bg) => ({
+                    fontFamily: "'Cormorant Garamond', Georgia, serif",
+                    fontSize: '13px', fontWeight: '600',
+                    letterSpacing: '2px', textTransform: 'uppercase',
+                    background: bg, backgroundSize: effect === 'foil' ? '250% 100%' : effect === 'holo' ? '300% 100%' : '400% 100%',
+                    WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                    animation: effect === 'foil' ? 'foilSweep 3s ease-in-out infinite' : effect === 'holo' ? 'holoShift 4s ease-in-out infinite' : 'prismaticFlow 5s linear infinite',
+                  });
+                  const textStyle = effect === 'foil'
+                    ? textGradient(`linear-gradient(110deg, ${tier.color} 0%, ${tier.color} 35%, #fff 50%, ${tier.color} 65%, ${tier.color} 100%)`)
+                    : effect === 'holo'
+                    ? textGradient(`linear-gradient(110deg, ${tier.color}, #c084fc, #60a5fa, ${tier.color}, #fb7185, ${tier.color})`)
+                    : effect === 'prismatic'
+                    ? textGradient('linear-gradient(110deg, #a78bfa, #fb7185, #fbbf24, #34d399, #60a5fa, #c084fc, #fb7185, #fbbf24)')
+                    : textFlat;
+                  return (
+                    <div style={badgeBase}>
+                      {effect === 'foil' && (
+                        <div style={{ position: 'absolute', top: 0, left: '-100%', width: '60%', height: '100%', background: 'linear-gradient(110deg, transparent 0%, transparent 30%, rgba(255,255,255,0.12) 45%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.12) 55%, transparent 70%, transparent 100%)', animation: 'foilBadgeSweep 3s ease-in-out infinite', pointerEvents: 'none' }} />
+                      )}
+                      {effect === 'holo' && (
+                        <div style={{ position: 'absolute', top: 0, left: '-120%', width: '80%', height: '100%', background: 'linear-gradient(110deg, transparent 0%, transparent 25%, rgba(167,139,250,0.15) 35%, rgba(251,113,133,0.2) 45%, rgba(96,165,250,0.2) 55%, rgba(251,191,36,0.15) 65%, transparent 75%, transparent 100%)', animation: 'holoBadgeSweep 4s ease-in-out infinite', pointerEvents: 'none' }} />
+                      )}
+                      {effect === 'prismatic' && (
+                        <div style={{ position: 'absolute', top: 0, left: '-120%', width: '100%', height: '100%', background: 'linear-gradient(110deg, transparent 0%, rgba(167,139,250,0.2) 15%, rgba(251,113,133,0.25) 30%, rgba(251,191,36,0.25) 45%, rgba(52,211,153,0.25) 60%, rgba(96,165,250,0.2) 75%, transparent 100%)', animation: 'prismaticBadgeSweep 5s linear infinite', pointerEvents: 'none' }} />
+                      )}
+                      <span style={textStyle}>{tier.name}</span>
+                      <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px' }}>{odds}</span>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
             
@@ -3358,6 +3447,17 @@ export default function DailyShuffleFinal() {
         @keyframes badgeRotate { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         @keyframes frostShimmer { 0% { background-position: 0% 0%; } 50% { background-position: 100% 100%; } 100% { background-position: 0% 0%; } }
+        @keyframes foilSweep { 0% { background-position: 200% 0; } 50% { background-position: -50% 0; } 100% { background-position: 200% 0; } }
+        @keyframes foilBadgeSweep { 0% { left: -100%; } 40% { left: 200%; } 100% { left: 200%; } }
+        @keyframes foilCardGlow { 0%, 100% { box-shadow: 0 0 12px var(--match-glow), 0 0 24px var(--match-glow); } 50% { box-shadow: 0 0 18px var(--match-glow), 0 0 36px var(--match-glow), 0 0 8px rgba(255,255,255,0.3); } }
+        @keyframes holoShift { 0% { background-position: 0% 0; } 50% { background-position: 300% 0; } 100% { background-position: 0% 0; } }
+        @keyframes holoBadgeSweep { 0% { left: -120%; } 50% { left: 200%; } 100% { left: 200%; } }
+        @keyframes holoCardGlow { 0% { border-color: var(--match-color); box-shadow: 0 0 10px var(--match-glow), 0 0 25px rgba(192,132,252,0.3), 0 0 50px rgba(96,165,250,0.15); } 25% { border-color: #c084fc; box-shadow: 0 0 10px rgba(192,132,252,0.6), 0 0 25px rgba(96,165,250,0.35), 0 0 50px rgba(251,113,133,0.15); } 50% { border-color: #60a5fa; box-shadow: 0 0 10px rgba(96,165,250,0.6), 0 0 25px rgba(251,113,133,0.35), 0 0 50px rgba(251,191,36,0.15); } 75% { border-color: #fb7185; box-shadow: 0 0 10px rgba(251,113,133,0.6), 0 0 25px var(--match-glow), 0 0 50px rgba(192,132,252,0.15); } 100% { border-color: var(--match-color); box-shadow: 0 0 10px var(--match-glow), 0 0 25px rgba(192,132,252,0.3), 0 0 50px rgba(96,165,250,0.15); } }
+        @keyframes prismaticFlow { 0% { background-position: 0% 0; } 100% { background-position: 400% 0; } }
+        @keyframes prismaticBadgeSweep { 0% { left: -120%; opacity: 0.7; } 50% { left: 200%; opacity: 0.7; } 100% { left: 200%; opacity: 0; } }
+        @keyframes prismaticGlow { 0% { box-shadow: 0 0 20px rgba(167,139,250,0.35), 0 0 60px rgba(167,139,250,0.1); } 25% { box-shadow: 0 0 20px rgba(251,113,133,0.35), 0 0 60px rgba(251,113,133,0.1); } 50% { box-shadow: 0 0 20px rgba(251,191,36,0.35), 0 0 60px rgba(251,191,36,0.1); } 75% { box-shadow: 0 0 20px rgba(52,211,153,0.35), 0 0 60px rgba(52,211,153,0.1); } 100% { box-shadow: 0 0 20px rgba(167,139,250,0.35), 0 0 60px rgba(167,139,250,0.1); } }
+        @keyframes prismaticBorderGlow { 0% { border-color: rgba(167,139,250,0.4); } 25% { border-color: rgba(251,113,133,0.4); } 50% { border-color: rgba(251,191,36,0.4); } 75% { border-color: rgba(52,211,153,0.4); } 100% { border-color: rgba(167,139,250,0.4); } }
+        @keyframes prismaticCardGlow { 0% { border-color: #a78bfa; box-shadow: 0 0 6px rgba(255,255,255,0.4), 0 0 16px rgba(167,139,250,0.6), 0 0 40px rgba(167,139,250,0.3), 0 0 70px rgba(251,113,133,0.12); } 10% { border-color: #c084fc; box-shadow: 0 0 3px rgba(255,255,255,0.2), 0 0 16px rgba(192,132,252,0.6), 0 0 40px rgba(251,113,133,0.3), 0 0 70px rgba(251,191,36,0.12); } 20% { border-color: #fb7185; box-shadow: 0 0 6px rgba(255,255,255,0.5), 0 0 18px rgba(251,113,133,0.7), 0 0 44px rgba(251,191,36,0.3), 0 0 75px rgba(52,211,153,0.12); } 30% { border-color: #f59e0b; box-shadow: 0 0 3px rgba(255,255,255,0.2), 0 0 16px rgba(251,191,36,0.6), 0 0 40px rgba(52,211,153,0.3), 0 0 70px rgba(96,165,250,0.12); } 40% { border-color: #fbbf24; box-shadow: 0 0 6px rgba(255,255,255,0.4), 0 0 18px rgba(251,191,36,0.7), 0 0 44px rgba(96,165,250,0.3), 0 0 75px rgba(167,139,250,0.12); } 50% { border-color: #34d399; box-shadow: 0 0 3px rgba(255,255,255,0.2), 0 0 16px rgba(52,211,153,0.6), 0 0 40px rgba(96,165,250,0.3), 0 0 70px rgba(192,132,252,0.12); } 60% { border-color: #60a5fa; box-shadow: 0 0 6px rgba(255,255,255,0.5), 0 0 18px rgba(96,165,250,0.7), 0 0 44px rgba(192,132,252,0.3), 0 0 75px rgba(251,113,133,0.12); } 70% { border-color: #818cf8; box-shadow: 0 0 3px rgba(255,255,255,0.2), 0 0 16px rgba(129,140,248,0.6), 0 0 40px rgba(167,139,250,0.3), 0 0 70px rgba(251,191,36,0.12); } 80% { border-color: #c084fc; box-shadow: 0 0 6px rgba(255,255,255,0.4), 0 0 18px rgba(192,132,252,0.7), 0 0 44px rgba(251,113,133,0.3), 0 0 75px rgba(52,211,153,0.12); } 90% { border-color: #e879f9; box-shadow: 0 0 3px rgba(255,255,255,0.2), 0 0 16px rgba(232,121,249,0.6), 0 0 40px rgba(167,139,250,0.3), 0 0 70px rgba(251,191,36,0.12); } 100% { border-color: #a78bfa; box-shadow: 0 0 6px rgba(255,255,255,0.4), 0 0 16px rgba(167,139,250,0.6), 0 0 40px rgba(167,139,250,0.3), 0 0 70px rgba(251,113,133,0.12); } }
         
         * { box-sizing: border-box; }
         
