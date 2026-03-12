@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { Star, Heart, Home, Search, Shield, Crown, Trophy, Award, Globe, Target, Crosshair, Layers, Copy, Download, RefreshCw, RotateCcw, TrendingUp, Activity, Hash, Mountain, Sunrise, Ghost, Skull, Brain, Magnet, Diamond, Gem, Hexagon, Pentagon, Octagon, Triangle, Square, Circle, BookOpen, Palette, Link2, Wine, Cake, Medal, Clock, Calendar, Zap, Sparkles, Moon, Sun, Flame, Eye, ChevronUp, ArrowUp, Compass, Rainbow, Repeat, Minus, GitBranch, Spade, Footprints, CalendarDays, CalendarCheck, CalendarRange, Route, CopyCheck, ShieldCheck, ShieldPlus, ShieldHalf, Boxes, Grid2x2, LayoutGrid, CircuitBoard, Flower2, ArrowUpCircle, MoonStar, SunMoon, Palmtree, CircleOff, FlipHorizontal2, Factory, Paintbrush, Droplets } from 'lucide-react';
 
 const SUITS = ['♠', '♥', '♦', '♣'];
 const SUIT_COLORS = { '♠': '#1a1a2e', '♥': '#be3455', '♦': '#be3455', '♣': '#1a1a2e' };
@@ -79,43 +80,128 @@ const FACTORY_LABELS = {
   6: { name: 'Factory Ghost', desc: 'The deck remembers' },
 };
 
-// Achievement definitions - now including poker hands
-const ACHIEVEMENTS = [
-  // Streak achievements
-  { id: 'first-step', name: 'First Step', icon: '👣', description: 'Complete your first shuffle', category: 'streak', unlocked: true },
-  { id: 'week-walker', name: 'Week Walker', icon: '🚶', description: '7 day streak', category: 'streak', unlocked: true },
-  { id: 'month-maven', name: 'Month Maven', icon: '📅', description: '30 day streak', category: 'streak', unlocked: false },
-  { id: 'quarter-quest', name: 'Quarter Quest', icon: '🗓️', description: '90 day streak', category: 'streak', unlocked: false },
-  { id: 'the-long-walk', name: 'The Long Walk', icon: '🏔️', description: '365 day streak - a full year of the experiment', category: 'streak', unlocked: false },
-  
-  // Match achievements
-  { id: 'close-call', name: 'Close Call', icon: '🎯', description: 'Match 5+ positions', category: 'match', unlocked: true },
-  { id: 'lucky-seven', name: 'Lucky Seven', icon: '🍀', description: 'Match 7+ positions', category: 'match', unlocked: false },
-  { id: 'near-miss', name: 'Near Miss', icon: '💫', description: 'Match 8+ positions', category: 'match', unlocked: false },
-  { id: 'the-impossible', name: 'The Impossible', icon: '⚡', description: 'Match 9+ positions', category: 'match', unlocked: false },
-  
-  // Poker hand achievements
-  { id: 'pair-up', name: 'Pair Up', icon: '🃏', description: 'A pair appeared consecutively in your shuffle', category: 'poker', unlocked: true },
-  { id: 'triple-threat', name: 'Triple Threat', icon: '🎲', description: 'Three of a kind appeared consecutively', category: 'poker', unlocked: false },
-  { id: 'double-double', name: 'Double Double', icon: '✌️', description: 'Two pairs appeared consecutively (AA BB pattern)', category: 'poker', unlocked: false },
-  { id: 'straight-path', name: 'The Straight Path', icon: '📈', description: '5 cards in rank order appeared consecutively', category: 'poker', unlocked: false },
-  { id: 'flush-fortune', name: 'Flush of Fortune', icon: '💎', description: '5 cards of the same suit appeared consecutively', category: 'poker', unlocked: false },
-  { id: 'lightning-strike', name: 'Lightning Strike', icon: '⚡', description: 'Four of a kind appeared consecutively', category: 'poker', unlocked: false },
-  { id: 'straight-flush', name: 'Straight Flush', icon: '🌟', description: '5 consecutive cards of the same suit in rank order', category: 'poker', unlocked: false },
-  { id: 'royal-witness', name: 'Royal Witness', icon: '👑', description: 'A royal flush appeared in your shuffle - the rarest of all hands', category: 'poker', unlocked: false, legendary: true },
-  
-  // Milestone achievements
-  { id: 'early-adopter', name: 'Early Adopter', icon: '🌱', description: 'Joined in the first month of the experiment', category: 'milestone', unlocked: true },
-  { id: 'century-club', name: 'Century Club', icon: '💯', description: 'Complete 100 shuffles', category: 'milestone', unlocked: false },
-  { id: 'the-millionth', name: 'The Millionth', icon: '🎰', description: 'Your shuffle was a milestone number', category: 'milestone', unlocked: false },
-  
-  // Special moment achievements
-  { id: 'witness', name: 'Witness', icon: '👁️', description: 'You were present when a new all-time record was set', category: 'special', unlocked: false },
-  { id: 'global-citizen', name: 'Global Citizen', icon: '🌍', description: 'Matched with someone from a different continent', category: 'special', unlocked: true },
-  { id: 'night-owl', name: 'Night Owl', icon: '🦉', description: 'Shuffled between midnight and 4am', category: 'special', unlocked: false },
-  { id: 'early-bird', name: 'Early Bird', icon: '🐦', description: 'Shuffled at the crack of dawn', category: 'special', unlocked: false },
-  { id: 'todays-leader', name: "Today's Leader", icon: '🏅', description: 'Had the closest match of the day', category: 'special', unlocked: false },
+// ============ FINDS CATALOGUE — all 35 discoverable patterns ============
+const FINDS_CATALOGUE = [
+  { id: 'pair', name: 'Pair', Icon: Copy, rarity: 'Common', desc: 'Two same-rank cards adjacent' },
+  { id: 'suited-3', name: 'Suited Three', Icon: Shield, rarity: 'Common', desc: 'Three same-suit in a row' },
+  { id: 'blackjack', name: 'Blackjack', Icon: Target, rarity: 'Common', desc: 'Ace + 10-value card adjacent' },
+  { id: 'run-3', name: 'Run of Three', Icon: TrendingUp, rarity: 'Common', desc: 'Three cards in rank sequence' },
+  { id: 'three-pairs', name: 'Three Pairs', Icon: Layers, rarity: 'Uncommon', desc: 'Three+ separate pairs in one shuffle' },
+  { id: 'suited-blackjack', name: 'Suited Blackjack', Icon: ShieldCheck, rarity: 'Uncommon', desc: 'Ace + 10-value of same suit adjacent' },
+  { id: 'colour-streak-6', name: 'Colour Streak 6', Icon: Palette, rarity: 'Uncommon', desc: 'Six+ same colour in a row' },
+  { id: 'suited-4', name: 'Suited Four', Icon: ShieldPlus, rarity: 'Uncommon', desc: 'Four same-suit in a row' },
+  { id: 'triple', name: 'Triple', Icon: Triangle, rarity: 'Uncommon', desc: 'Three same-rank adjacent' },
+  { id: 'mirror', name: 'Mirror', Icon: FlipHorizontal2, rarity: 'Uncommon', desc: '3+ rank-mirrored pairs (pos 1&52, 2&51...)' },
+  { id: 'alternating-7', name: 'Alternating 7', Icon: GitBranch, rarity: 'Rare', desc: 'Seven alternating red/black' },
+  { id: 'two-pair', name: 'Two Pair', Icon: CopyCheck, rarity: 'Rare', desc: 'AABB pattern in four consecutive' },
+  { id: 'colour-streak-8', name: 'Colour Streak 8', Icon: Paintbrush, rarity: 'Rare', desc: 'Eight same colour in a row' },
+  { id: 'suited-5', name: 'Suited Five', Icon: Pentagon, rarity: 'Rare', desc: 'Five same-suit consecutive' },
+  { id: 'alternating-10', name: 'Alternating 10', Icon: Activity, rarity: 'Rare', desc: 'Ten alternating red/black' },
+  { id: 'perfect-blackjack', name: 'Perfect Blackjack', Icon: ShieldHalf, rarity: 'Rare', desc: 'A♠ + J♠ adjacent' },
+  { id: 'straight', name: 'Straight', Icon: ArrowUp, rarity: 'Rare', desc: 'Five cards in rank sequence' },
+  { id: 'ace-high', name: 'Ace High', Icon: Star, rarity: 'Rare', desc: 'Ace of Spades in position 1' },
+  { id: 'run-4', name: 'Run of Four', Icon: TrendingUp, rarity: 'Rare', desc: 'Four in rank sequence' },
+  { id: 'colour-streak-10', name: 'Colour Streak 10', Icon: Droplets, rarity: 'Very Rare', desc: 'Ten same colour in a row' },
+  { id: 'full-house', name: 'Full House', Icon: Home, rarity: 'Very Rare', desc: 'AAABB or AABBB in five consecutive' },
+  { id: 'suited-6', name: 'Suited Six', Icon: Hexagon, rarity: 'Very Rare', desc: 'Six same-suit consecutive' },
+  { id: 'two-triples', name: 'Two Triples', Icon: Boxes, rarity: 'Very Rare', desc: 'Two separate three-of-a-kinds' },
+  { id: 'ascending-top-5', name: 'Ascending Top 5', Icon: ArrowUp, rarity: 'Very Rare', desc: 'First five cards in rank order' },
+  { id: 'quad', name: 'Quad', Icon: Grid2x2, rarity: 'Very Rare', desc: 'Four same-rank adjacent' },
+  { id: 'run-6', name: 'Run of Six', Icon: Activity, rarity: 'Very Rare', desc: 'Six in rank sequence' },
+  { id: 'suited-7', name: 'Suited Seven', Icon: Octagon, rarity: 'Very Rare', desc: 'Seven same-suit consecutive' },
+  { id: 'run-7', name: 'Run of Seven', Icon: TrendingUp, rarity: 'Very Rare', desc: 'Seven in rank sequence' },
+  { id: 'dead-mans-hand', name: "Dead Man's Hand", Icon: Skull, rarity: 'Extraordinary', desc: 'Two Aces + two Eights in 4 consecutive' },
+  { id: 'suited-8', name: 'Suited Eight', Icon: Circle, rarity: 'Extraordinary', desc: 'Eight same-suit consecutive' },
+  { id: 'straight-flush', name: 'Straight Flush', Icon: Sparkles, rarity: 'Extraordinary', desc: 'Five consecutive, same suit, in order' },
+  { id: 'two-quads', name: 'Two Quads', Icon: LayoutGrid, rarity: 'Extraordinary', desc: 'Two separate four-of-a-kinds' },
+  { id: 'solitaire-5', name: 'Solitaire 5', Icon: Heart, rarity: 'Extraordinary', desc: '5 consecutive: alternating colour, descending rank' },
+  { id: 'factory-run-4', name: 'Factory Run 4+', Icon: Factory, rarity: 'Extraordinary', desc: '4+ consecutive cards in factory deck order' },
+  { id: 'royal-flush', name: 'Royal Flush', Icon: Crown, rarity: 'Legendary', desc: '10-J-Q-K-A same suit consecutive' },
 ];
+
+const FINDS_RARITY_COLORS = {
+  Common: '#9ca3af', Uncommon: '#60a5fa', Rare: '#a78bfa',
+  'Very Rare': '#f472b6', Extraordinary: '#fbbf24', Legendary: '#ffffff',
+};
+const FINDS_RARITY_ORDER = ['Common', 'Uncommon', 'Rare', 'Very Rare', 'Extraordinary', 'Legendary'];
+
+// Simulated discovered finds — will be replaced with real user data from backend
+const DISCOVERED_FIND_IDS = new Set([
+  'pair', 'suited-3', 'blackjack', 'run-3',
+  'three-pairs', 'suited-blackjack', 'colour-streak-6', 'suited-4', 'triple',
+  'alternating-7', 'two-pair', 'colour-streak-8', 'colour-streak-10',
+]);
+
+// ============ ACHIEVEMENTS — 52 for 52 cards ============
+const TROPHY_ACHIEVEMENTS = [
+  { id: 'first-step', name: 'First Step', Icon: Footprints, desc: 'Complete your first shuffle', category: 'Streaks', unlocked: true },
+  { id: 'week-walker', name: 'Week Walker', Icon: CalendarDays, desc: '7 day streak', category: 'Streaks', unlocked: true },
+  { id: 'fortnight', name: 'Fortnight', Icon: CalendarCheck, desc: '14 day streak', category: 'Streaks', unlocked: true },
+  { id: 'month-maven', name: 'Month Maven', Icon: CalendarRange, desc: '30 day streak', category: 'Streaks', unlocked: false },
+  { id: 'quarter-quest', name: 'Quarter Quest', Icon: Mountain, desc: '90 day streak', category: 'Streaks', unlocked: false },
+  { id: 'the-long-walk', name: 'The Long Walk', Icon: Route, desc: '365 day streak', category: 'Streaks', unlocked: false },
+  { id: 'double-digits', name: 'Double Digits', Icon: Hash, desc: '10 total shuffles', category: 'Shuffle Totals', unlocked: true },
+  { id: 'half-century', name: 'Half Century', Icon: Target, desc: '50 total shuffles', category: 'Shuffle Totals', unlocked: false },
+  { id: 'century-club', name: 'Century Club', Icon: Award, desc: '100 total shuffles', category: 'Shuffle Totals', unlocked: false },
+  { id: 'full-orbit', name: 'Full Orbit', Icon: Globe, desc: '365 total shuffles', category: 'Shuffle Totals', unlocked: false },
+  { id: 'close-call', name: 'Close Call', Icon: Crosshair, desc: 'Match 5+ positions', category: 'Match Milestones', unlocked: true },
+  { id: 'lucky-seven', name: 'Lucky Seven', Icon: Diamond, desc: 'Match 7+ positions', category: 'Match Milestones', unlocked: false },
+  { id: 'near-miss', name: 'Near Miss', Icon: Sparkles, desc: 'Match 8+ positions', category: 'Match Milestones', unlocked: false },
+  { id: 'the-impossible', name: 'The Impossible', Icon: Zap, desc: 'Match 9+ positions', category: 'Match Milestones', unlocked: false },
+  { id: 'ghost-town', name: 'Ghost Town', Icon: Ghost, desc: 'Get a 0-match', category: 'Match Experiences', unlocked: false },
+  { id: 'twins', name: 'Twins', Icon: CopyCheck, desc: 'Same match count two days in a row', category: 'Match Experiences', unlocked: true },
+  { id: 'the-other-half', name: 'The Other Half', Icon: Link2, desc: 'A past shuffle gets matched by someone new', category: 'Match Experiences', unlocked: false },
+  { id: 'full-spectrum', name: 'Full Spectrum', Icon: Rainbow, desc: 'See every tier from Ghost to Singularity', category: 'Match Experiences', unlocked: false },
+  { id: 'curious', name: 'Curious', Icon: Search, desc: 'Discover 5 unique finds', category: 'Collection Progress', unlocked: true },
+  { id: 'explorer', name: 'Explorer', Icon: Compass, desc: 'Discover 15 unique finds', category: 'Collection Progress', unlocked: false },
+  { id: 'cataloguer', name: 'Cataloguer', Icon: BookOpen, desc: 'Discover 25 unique finds', category: 'Collection Progress', unlocked: false },
+  { id: 'something-rare', name: 'Something Rare This Way Comes', Icon: Gem, desc: 'First Rare find', category: 'First Discovery', unlocked: true },
+  { id: 'against-the-odds', name: 'Against the Odds', Icon: Diamond, desc: 'First Very Rare find', category: 'First Discovery', unlocked: true },
+  { id: 'one-in-a-million', name: 'One in a Million', Icon: Star, desc: 'First Extraordinary find', category: 'First Discovery', unlocked: false },
+  { id: 'royal-witness', name: 'Royal Witness', Icon: Crown, desc: 'Discover a Royal Flush', category: 'First Discovery', unlocked: false, legendary: true },
+  { id: 'blank-slate', name: 'Blank Slate', Icon: Square, desc: '0 cards in factory position', category: 'Factory Position', unlocked: true },
+  { id: 'deja-vu', name: 'Déjà Vu', Icon: Home, desc: '2+ cards in factory position', category: 'Factory Position', unlocked: true },
+  { id: 'homing-instinct', name: 'Homing Instinct', Icon: Magnet, desc: '3+ cards in factory position', category: 'Factory Position', unlocked: false },
+  { id: 'the-deck-remembers', name: 'The Deck Remembers', Icon: Brain, desc: '4+ cards in factory position', category: 'Factory Position', unlocked: false },
+  { id: 'total-recall', name: 'Total Recall', Icon: CircuitBoard, desc: '5+ cards in factory position', category: 'Factory Position', unlocked: false },
+  { id: 'rising-star', name: 'Rising Star', Icon: TrendingUp, desc: 'A past shuffle improves its best match', category: 'Retroactive', unlocked: false },
+  { id: 'sleeper-hit', name: 'Sleeper Hit', Icon: Moon, desc: 'A shuffle 30+ days old gets a new highest match', category: 'Retroactive', unlocked: false },
+  { id: 'late-bloomer', name: 'Late Bloomer', Icon: Flower2, desc: 'A shuffle reaches match 5+ after starting at 2 or lower', category: 'Retroactive', unlocked: false },
+  { id: 'the-climber', name: 'The Climber', Icon: ArrowUpCircle, desc: 'A shuffle improves its best match three times', category: 'Retroactive', unlocked: false },
+  { id: 'night-owl', name: 'Night Owl', Icon: MoonStar, desc: 'Shuffle between midnight and 4am', category: 'Fun & Personality', unlocked: false },
+  { id: 'early-bird', name: 'Early Bird', Icon: Sun, desc: 'Shuffle between 4am and 7am', category: 'Fun & Personality', unlocked: false },
+  { id: 'night-and-day', name: 'Night and Day', Icon: SunMoon, desc: 'Earn both Night Owl and Early Bird', category: 'Fun & Personality', unlocked: false },
+  { id: 'weekender', name: 'Weekender', Icon: Palmtree, desc: 'Shuffle Saturday and Sunday the same weekend', category: 'Fun & Personality', unlocked: true },
+  { id: 'monday-motivation', name: 'Monday Motivation', Icon: Flame, desc: 'Shuffle on a Monday', category: 'Fun & Personality', unlocked: true },
+  { id: 'creature-of-habit', name: 'Creature of Habit', Icon: Clock, desc: 'Same hour, 7 days running', category: 'Fun & Personality', unlocked: false },
+  { id: 'comeback-kid', name: 'Comeback Kid', Icon: RotateCcw, desc: 'Shuffle again after 7+ days away', category: 'Fun & Personality', unlocked: false },
+  { id: 'jackpot', name: 'Jackpot', Icon: Sparkles, desc: '8+ finds in a single shuffle', category: 'Per-Shuffle Moments', unlocked: false },
+  { id: 'phantom', name: 'Phantom', Icon: CircleOff, desc: 'Zero matches AND zero factory positions', category: 'Per-Shuffle Moments', unlocked: false },
+  { id: 'new-horizons', name: 'New Horizons', Icon: Sunrise, desc: '3+ new finds in a single shuffle', category: 'Per-Shuffle Moments', unlocked: false },
+  { id: 'variety-pack', name: 'Variety Pack', Icon: Boxes, desc: 'Finds from 4+ rarity tiers in one shuffle', category: 'Variety', unlocked: false },
+  { id: 'hat-trick', name: 'Hat Trick', Icon: Repeat, desc: 'Same match count three days in a row', category: 'Variety', unlocked: false },
+  { id: 'connoisseur', name: 'Connoisseur', Icon: Wine, desc: 'Finds from all 6 rarity tiers', category: 'Variety', unlocked: false },
+  { id: 'anniversary', name: 'Anniversary', Icon: Cake, desc: 'Shuffle on your one-year anniversary', category: 'Lifetime', unlocked: false },
+  { id: 'daily-crown', name: 'Daily Crown', Icon: Crown, desc: 'Highest match of the day (ties count)', category: 'Lifetime', unlocked: false },
+  { id: 'encore', name: 'Encore', Icon: RefreshCw, desc: 'Watch your shuffle again', category: 'Keepsakes', unlocked: true },
+  { id: 'imprint', name: 'Imprint', Icon: Download, desc: 'Save your shuffle to keep', category: 'Keepsakes', unlocked: false },
+  { id: 'completionist', name: 'Completionist', Icon: Trophy, desc: 'Discover all 35 finds', category: 'The Final Card', unlocked: false, legendary: true },
+];
+
+const TROPHY_CATEGORY_ORDER = [
+  'Streaks', 'Shuffle Totals', 'Match Milestones', 'Match Experiences',
+  'Collection Progress', 'First Discovery', 'Factory Position', 'Retroactive',
+  'Fun & Personality', 'Per-Shuffle Moments', 'Variety', 'Lifetime',
+  'Keepsakes', 'The Final Card',
+];
+
+const TROPHY_CATEGORY_COLORS = {
+  'Streaks': '#fb7185', 'Shuffle Totals': '#60a5fa', 'Match Milestones': '#2dd4bf',
+  'Match Experiences': '#a78bfa', 'Collection Progress': '#34d399', 'First Discovery': '#c084fc',
+  'Factory Position': '#c4e0f9', 'Retroactive': '#f9a8d4', 'Fun & Personality': '#fbbf24',
+  'Per-Shuffle Moments': '#fb923c', 'Variety': '#6ee7b7', 'Lifetime': '#fde68a',
+  'Keepsakes': '#94a3b8', 'The Final Card': '#ffffff',
+};
 
 const generateDeck = () => {
   const deck = [];
@@ -909,219 +995,265 @@ const AchievementBadge = ({ achievement, size = 'medium' }) => {
   );
 };
 
-// Achievement Card Component
-const AchievementCard = ({ achievement }) => (
-  <div style={{
-    background: achievement.unlocked 
-      ? achievement.legendary
-        ? 'linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(251, 113, 133, 0.05))'
-        : 'rgba(255, 255, 255, 0.03)' 
-      : 'rgba(0, 0, 0, 0.2)',
-    border: achievement.unlocked 
-      ? achievement.legendary
-        ? '1px solid rgba(251, 191, 36, 0.3)'
-        : '1px solid rgba(255, 255, 255, 0.08)' 
-      : '1px solid rgba(255, 255, 255, 0.03)',
-    borderRadius: '16px',
-    padding: '20px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '16px',
-    opacity: achievement.unlocked ? 1 : 0.6,
-    transition: 'all 0.3s ease',
-  }}>
-    <AchievementBadge achievement={achievement} size="medium" />
-    <div style={{ flex: 1 }}>
-      <div style={{
-        fontSize: '14px',
-        fontWeight: '600',
-        color: achievement.unlocked 
-          ? achievement.legendary ? '#fbbf24' : '#fff' 
-          : 'rgba(255,255,255,0.4)',
-        marginBottom: '4px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-      }}>
-        {achievement.name}
-        {achievement.legendary && <span style={{ fontSize: '10px', color: '#fbbf24', background: 'rgba(251,191,36,0.2)', padding: '2px 6px', borderRadius: '4px' }}>LEGENDARY</span>}
-      </div>
-      <div style={{
-        fontSize: '12px',
-        color: achievement.unlocked ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.25)',
-        lineHeight: 1.4,
-      }}>
-        {achievement.description}
-      </div>
-    </div>
-    {achievement.unlocked && (
-      <div style={{
-        fontSize: '10px',
-        color: '#34d399',
-        textTransform: 'uppercase',
-        letterSpacing: '1px',
-        fontWeight: '600',
-      }}>
-        Earned
-      </div>
-    )}
-  </div>
-);
+// ============ TROPHY CABINET ============
+const TrophyCabinet = ({ isOpen, onClose }) => {
+  const [activeTab, setActiveTab] = useState('collection');
+  const [hoveredFind, setHoveredFind] = useState(null);
+  const [selectedFind, setSelectedFind] = useState(null);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const overlayRef = useRef(null);
 
-// Achievements Panel
-const AchievementsPanel = ({ isOpen, onClose }) => {
-  const categories = [
-    { id: 'streak', name: 'Dedication', icon: '🔥' },
-    { id: 'match', name: 'Precision', icon: '🎯' },
-    { id: 'poker', name: 'Poker Hands', icon: '🃏' },
-    { id: 'milestone', name: 'Milestones', icon: '🏆' },
-    { id: 'special', name: 'Special', icon: '✨' },
-  ];
-  
-  const [activeCategory, setActiveCategory] = useState('streak');
-  const unlockedCount = ACHIEVEMENTS.filter(a => a.unlocked).length;
-  
+  const discoveredCount = FINDS_CATALOGUE.filter(f => DISCOVERED_FIND_IDS.has(f.id)).length;
+  const unlockedCount = TROPHY_ACHIEVEMENTS.filter(a => a.unlocked).length;
+
+  const findsByRarity = FINDS_RARITY_ORDER.map(rarity => ({
+    rarity, color: FINDS_RARITY_COLORS[rarity],
+    finds: FINDS_CATALOGUE.filter(f => f.rarity === rarity),
+  }));
+
+  const achievementsByCategory = TROPHY_CATEGORY_ORDER.map(cat => ({
+    category: cat, color: TROPHY_CATEGORY_COLORS[cat],
+    achievements: TROPHY_ACHIEVEMENTS.filter(a => a.category === cat),
+  })).filter(g => g.achievements.length > 0);
+
+  useEffect(() => {
+    const el = overlayRef.current;
+    if (!el) return;
+    const handleScroll = () => setShowScrollTop(el.scrollTop > 300);
+    el.addEventListener('scroll', handleScroll, { passive: true });
+    return () => el.removeEventListener('scroll', handleScroll);
+  }, [isOpen]);
+
+  useEffect(() => { setShowScrollTop(false); }, [activeTab]);
+
+  const scrollToTop = (e) => {
+    e.stopPropagation();
+    overlayRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   if (!isOpen) return null;
-  
+
   return (
-    <div style={{
-      position: 'fixed',
-      inset: 0,
-      background: 'rgba(0,0,0,0.8)',
-      backdropFilter: 'blur(10px)',
-      zIndex: 100,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '20px',
+    <div ref={overlayRef} onClick={onClose} style={{
+      position: 'fixed', inset: 0, zIndex: 1000,
+      background: 'rgba(6, 6, 12, 0.92)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+      animation: 'fadeIn 0.3s ease', overflowY: 'auto',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 20px 60px',
     }}>
-      <div style={{
-        background: 'linear-gradient(180deg, #151528 0%, #0d0d1a 100%)',
-        borderRadius: '24px',
-        width: '100%',
-        maxWidth: '600px',
-        maxHeight: '80vh',
-        overflow: 'hidden',
-        display: 'flex',
-        flexDirection: 'column',
-        border: '1px solid rgba(255,255,255,0.1)',
+      <div onClick={(e) => e.stopPropagation()} style={{
+        width: '100%', maxWidth: '560px',
       }}>
         {/* Header */}
-        <div style={{
-          padding: '24px',
-          borderBottom: '1px solid rgba(255,255,255,0.08)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}>
-          <div>
-            <h2 style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif",
-              fontSize: '28px',
-              fontWeight: '400',
-              color: '#fff',
-              margin: 0,
-            }}>
-              Achievements
-            </h2>
-            <p style={{
-              fontSize: '13px',
-              color: 'rgba(255,255,255,0.4)',
-              margin: '4px 0 0',
-            }}>
-              {unlockedCount} of {ACHIEVEMENTS.length} unlocked
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            style={{
-              width: '36px',
-              height: '36px',
-              borderRadius: '50%',
-              border: '1px solid rgba(255,255,255,0.1)',
-              background: 'rgba(255,255,255,0.05)',
-              color: 'rgba(255,255,255,0.5)',
-              fontSize: '18px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            ×
-          </button>
-        </div>
-        
-        {/* Progress bar */}
-        <div style={{ padding: '0 24px', marginTop: '16px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
           <div style={{
-            height: '4px',
-            background: 'rgba(255,255,255,0.1)',
-            borderRadius: '2px',
-            overflow: 'hidden',
+            fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '28px', fontWeight: '300',
+            color: '#ffffff', letterSpacing: '4px', textTransform: 'uppercase', marginBottom: '8px',
+          }}>Trophy Cabinet</div>
+          <div style={{
+            fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '13px', fontWeight: '600',
+            fontStyle: 'italic', color: 'rgba(255,255,255,0.35)',
           }}>
-            <div style={{
-              height: '100%',
-              width: `${(unlockedCount / ACHIEVEMENTS.length) * 100}%`,
-              background: 'linear-gradient(90deg, #a78bfa, #fb7185, #fbbf24, #34d399)',
-              borderRadius: '2px',
-              transition: 'width 0.5s ease',
-            }} />
+            {activeTab === 'collection'
+              ? `${discoveredCount} of ${FINDS_CATALOGUE.length} finds discovered`
+              : `${unlockedCount} of ${TROPHY_ACHIEVEMENTS.length} achievements unlocked`}
           </div>
         </div>
-        
-        {/* Category tabs */}
+
+        {/* Tab switcher */}
         <div style={{
-          display: 'flex',
-          gap: '8px',
-          padding: '20px 24px',
-          overflowX: 'auto',
+          display: 'flex', justifyContent: 'center', gap: '4px', marginBottom: '28px',
+          background: 'rgba(255,255,255,0.03)', borderRadius: '50px', padding: '4px',
+          border: '1px solid rgba(255,255,255,0.06)',
         }}>
-          {categories.map(cat => (
-            <button
-              key={cat.id}
-              onClick={() => setActiveCategory(cat.id)}
-              style={{
-                padding: '10px 16px',
-                borderRadius: '12px',
-                border: 'none',
-                background: activeCategory === cat.id 
-                  ? 'rgba(167, 139, 250, 0.2)' 
-                  : 'rgba(255,255,255,0.03)',
-                color: activeCategory === cat.id 
-                  ? '#a78bfa' 
-                  : 'rgba(255,255,255,0.5)',
-                fontSize: '13px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                whiteSpace: 'nowrap',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <span>{cat.icon}</span>
-              {cat.name}
-            </button>
+          {[{ key: 'collection', label: 'The Collection' }, { key: 'wall', label: 'The Wall' }].map(tab => (
+            <button key={tab.key} onClick={() => { setActiveTab(tab.key); overlayRef.current?.scrollTo({ top: 0 }); }} style={{
+              fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '14px',
+              fontWeight: activeTab === tab.key ? '600' : '400', letterSpacing: '1.5px',
+              textTransform: 'uppercase', padding: '10px 24px', borderRadius: '50px', border: 'none',
+              cursor: 'pointer', transition: 'all 0.25s ease',
+              background: activeTab === tab.key ? 'rgba(167, 139, 250, 0.15)' : 'transparent',
+              color: activeTab === tab.key ? '#ffffff' : 'rgba(255,255,255,0.35)',
+              boxShadow: activeTab === tab.key ? '0 0 12px rgba(167, 139, 250, 0.1)' : 'none',
+            }}>{tab.label}</button>
           ))}
         </div>
-        
-        {/* Achievement list */}
-        <div style={{
-          flex: 1,
-          overflowY: 'auto',
-          padding: '0 24px 24px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '12px',
+
+        {/* THE COLLECTION */}
+        {activeTab === 'collection' && (
+          <div style={{ animation: 'fadeIn 0.3s ease' }}>
+            {findsByRarity.map(({ rarity, color, finds }) => {
+              const discoveredInTier = finds.filter(f => DISCOVERED_FIND_IDS.has(f.id)).length;
+              return (
+                <div key={rarity} style={{ marginBottom: '24px' }}>
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px',
+                    paddingBottom: '8px', borderBottom: `1px solid ${color}11`,
+                  }}>
+                    <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '10px', fontWeight: '600',
+                      letterSpacing: '2px', textTransform: 'uppercase', color, opacity: 0.8 }}>{rarity}</span>
+                    <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '10px',
+                      color: 'rgba(255,255,255,0.2)' }}>{discoveredInTier}/{finds.length}</span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(155px, 1fr))', gap: '8px' }}>
+                    {finds.map(find => {
+                      const FindIcon = find.Icon;
+                      const discovered = DISCOVERED_FIND_IDS.has(find.id);
+                      const isActive = selectedFind === find.id || hoveredFind === find.id;
+                      return (
+                        <div key={find.id}
+                          onMouseEnter={() => setHoveredFind(find.id)}
+                          onMouseLeave={() => setHoveredFind(null)}
+                          onClick={() => setSelectedFind(selectedFind === find.id ? null : find.id)}
+                          style={{
+                            padding: '10px 12px', borderRadius: '12px',
+                            background: discovered ? (isActive ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.025)') : 'rgba(255,255,255,0.012)',
+                            border: `1px solid ${discovered ? (isActive ? `${color}33` : 'rgba(255,255,255,0.05)') : 'rgba(255,255,255,0.025)'}`,
+                            cursor: discovered ? 'pointer' : 'default', transition: 'all 0.2s ease',
+                          }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px',
+                            marginBottom: discovered && isActive ? '6px' : '0', transition: 'margin 0.15s ease' }}>
+                            <div style={{
+                              width: '28px', height: '28px', borderRadius: '7px',
+                              background: discovered ? `${color}12` : 'rgba(255,255,255,0.02)',
+                              border: `1px solid ${discovered ? `${color}20` : 'rgba(255,255,255,0.035)'}`,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                              ...(discovered ? { boxShadow: `0 0 8px ${color}10` } : {}),
+                            }}>
+                              {discovered ? (
+                                <FindIcon size={14} strokeWidth={1.5} color={color} style={{ opacity: 0.85 }} />
+                              ) : (
+                                <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.08)',
+                                  fontWeight: '700', fontFamily: "'Inter', sans-serif" }}>?</span>
+                              )}
+                            </div>
+                            <span style={{
+                              fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '13px', fontWeight: '600',
+                              color: discovered ? color : 'rgba(255,255,255,0.12)', letterSpacing: '0.3px',
+                              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                            }}>{discovered ? find.name : '???'}</span>
+                          </div>
+                          {discovered && isActive && (
+                            <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '10px',
+                              color: 'rgba(255,255,255,0.4)', lineHeight: 1.4,
+                              animation: 'fadeIn 0.2s ease', paddingLeft: '38px' }}>{find.desc}</div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* THE WALL */}
+        {activeTab === 'wall' && (
+          <div style={{ animation: 'fadeIn 0.3s ease' }}>
+            {achievementsByCategory.map(({ category, color, achievements }) => {
+              const unlockedInCat = achievements.filter(a => a.unlocked).length;
+              const isFinalCard = category === 'The Final Card';
+              return (
+                <div key={category} style={{
+                  marginBottom: isFinalCard ? '8px' : '24px',
+                  ...(isFinalCard ? { marginTop: '8px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.06)' } : {}),
+                }}>
+                  {!isFinalCard && (
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px',
+                      paddingBottom: '6px', borderBottom: `1px solid ${color}0D`,
+                    }}>
+                      <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '10px', fontWeight: '600',
+                        letterSpacing: '2px', textTransform: 'uppercase', color, opacity: 0.7 }}>{category}</span>
+                      <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '10px',
+                        color: 'rgba(255,255,255,0.18)' }}>{unlockedInCat}/{achievements.length}</span>
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    {achievements.map((ach) => {
+                      const IconComponent = ach.Icon;
+                      const isLegendary = ach.legendary;
+                      const accentColor = isLegendary ? '#fbbf24' : color;
+                      return (
+                        <div key={ach.id} style={{
+                          display: 'flex', alignItems: 'center', gap: '12px',
+                          padding: isFinalCard ? '14px 16px' : '9px 12px', borderRadius: '10px',
+                          background: isFinalCard
+                            ? (ach.unlocked ? 'rgba(251, 191, 36, 0.05)' : 'rgba(255,255,255,0.015)')
+                            : (ach.unlocked ? 'rgba(255,255,255,0.025)' : 'rgba(255,255,255,0.008)'),
+                          border: `1px solid ${isFinalCard
+                            ? (ach.unlocked ? 'rgba(251, 191, 36, 0.15)' : 'rgba(255,255,255,0.04)')
+                            : (ach.unlocked ? (isLegendary ? 'rgba(251, 191, 36, 0.12)' : 'rgba(255,255,255,0.04)') : 'rgba(255,255,255,0.02)')}`,
+                          transition: 'all 0.2s ease',
+                        }}>
+                          <div style={{
+                            width: '32px', height: '32px', borderRadius: '8px',
+                            background: ach.unlocked ? `${accentColor}12` : 'rgba(255,255,255,0.02)',
+                            border: `1px solid ${ach.unlocked ? `${accentColor}20` : 'rgba(255,255,255,0.03)'}`,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                          }}>
+                            <IconComponent size={16} strokeWidth={1.5}
+                              color={ach.unlocked ? accentColor : 'rgba(255,255,255,0.1)'}
+                              style={{ opacity: ach.unlocked ? 0.85 : 0.4 }} />
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{
+                              fontFamily: "'Cormorant Garamond', Georgia, serif",
+                              fontSize: isFinalCard ? '15px' : '13px', fontWeight: '600',
+                              color: ach.unlocked ? (isLegendary ? '#fbbf24' : '#ffffff') : 'rgba(255,255,255,0.15)',
+                              letterSpacing: isFinalCard ? '1px' : '0.3px',
+                            }}>{ach.unlocked ? ach.name : '???'}</div>
+                            <div style={{
+                              fontFamily: "'Inter', sans-serif", fontSize: '10px',
+                              color: ach.unlocked ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.1)',
+                              marginTop: '1px', lineHeight: 1.3,
+                            }}>{ach.desc}</div>
+                          </div>
+                          {ach.unlocked && (
+                            <div style={{ color: isLegendary ? 'rgba(251, 191, 36, 0.5)' : `${accentColor}70`,
+                              flexShrink: 0, fontSize: '12px' }}>✓</div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+            <div style={{
+              textAlign: 'center', marginTop: '16px', fontFamily: "'Inter', sans-serif",
+              fontSize: '10px', color: 'rgba(255,255,255,0.15)', letterSpacing: '1px',
+            }}>52 achievements · 52 cards</div>
+          </div>
+        )}
+
+        {/* Close hint */}
+        <div onClick={onClose} style={{
+          textAlign: 'center', marginTop: '36px', padding: '14px 24px', cursor: 'pointer',
         }}>
-          {ACHIEVEMENTS
-            .filter(a => a.category === activeCategory)
-            .map(achievement => (
-              <AchievementCard key={achievement.id} achievement={achievement} />
-            ))}
+          <span style={{
+            fontFamily: "'Cormorant Garamond', Georgia, serif",
+            fontSize: '15px', fontWeight: '600', fontStyle: 'italic',
+            color: 'rgba(255,255,255,0.4)', letterSpacing: '0.5px',
+          }}>Tap anywhere to close</span>
         </div>
       </div>
+
+      {/* Scroll-to-top */}
+      {showScrollTop && (
+        <div onClick={scrollToTop} style={{
+          position: 'fixed', bottom: '28px', right: '28px',
+          width: '42px', height: '42px', borderRadius: '50%',
+          background: 'rgba(20, 20, 35, 0.85)',
+          border: '1px solid rgba(255,255,255,0.12)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', animation: 'fadeIn 0.3s ease',
+          backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+          zIndex: 1010, boxShadow: '0 2px 12px rgba(0,0,0,0.4)',
+        }}>
+          <ChevronUp size={20} strokeWidth={1.5} color="rgba(255,255,255,0.55)" />
+        </div>
+      )}
     </div>
   );
 };
@@ -3360,7 +3492,7 @@ export default function DailyShuffleFinal() {
         onOpenProvenance={() => setShowProvenance(true)}
       />
       <ViewToggle view={view} setView={setView} />
-      <AchievementsPanel isOpen={showAchievements} onClose={() => setShowAchievements(false)} />
+      <TrophyCabinet isOpen={showAchievements} onClose={() => setShowAchievements(false)} />
         <ShareModal
         isOpen={showShareCard}
         onClose={() => setShowShareCard(false)}
