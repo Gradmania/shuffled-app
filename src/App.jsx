@@ -80,39 +80,235 @@ const FACTORY_LABELS = {
   6: { name: 'Factory Ghost', desc: 'The deck remembers' },
 };
 
+// ============ CUSTOM SVG ICONS ============
+// Bespoke icons for finds and achievements. Same API as Lucide: size, strokeWidth, color.
+// Icons with overlapping cards use CARD_BG fill for proper card-over-card occlusion.
+const CARD_BG = '#12121a';
+
+const BlackjackIcon = ({ size = 24, strokeWidth = 1.5, color = 'currentColor', ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M12 3C9.5 6.5 4 9.5 4 13.5C4 16 5.8 17.5 8 17.5C9.5 17.5 10.8 16.8 12 15.5C13.2 16.8 14.5 17.5 16 17.5C18.2 17.5 20 16 20 13.5C20 9.5 14.5 6.5 12 3Z"/>
+    <line x1="12" y1="15.5" x2="12" y2="20"/><line x1="9" y1="20" x2="15" y2="20"/>
+  </svg>
+);
+
+const SuitedBlackjackIcon = ({ size = 24, strokeWidth = 1.5, color = 'currentColor', ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={color} stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M12 3C9.5 6.5 4 9.5 4 13.5C4 16 5.8 17.5 8 17.5C9.5 17.5 10.8 16.8 12 15.5C13.2 16.8 14.5 17.5 16 17.5C18.2 17.5 20 16 20 13.5C20 9.5 14.5 6.5 12 3Z"/>
+    <line x1="12" y1="15.5" x2="12" y2="20"/><line x1="9" y1="20" x2="15" y2="20"/>
+  </svg>
+);
+
+const PerfectBlackjackIcon = ({ size = 24, strokeWidth = 1.5, color = 'currentColor', ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <line x1="12" y1="0.5" x2="12" y2="2" strokeWidth={strokeWidth * 0.55} opacity="0.5"/>
+    <line x1="5" y1="3" x2="6.2" y2="4" strokeWidth={strokeWidth * 0.55} opacity="0.5"/>
+    <line x1="19" y1="3" x2="17.8" y2="4" strokeWidth={strokeWidth * 0.55} opacity="0.5"/>
+    <line x1="2" y1="9" x2="3.5" y2="9.5" strokeWidth={strokeWidth * 0.55} opacity="0.5"/>
+    <line x1="22" y1="9" x2="20.5" y2="9.5" strokeWidth={strokeWidth * 0.55} opacity="0.5"/>
+    <line x1="2.5" y1="14" x2="3.8" y2="13.8" strokeWidth={strokeWidth * 0.55} opacity="0.5"/>
+    <line x1="21.5" y1="14" x2="20.2" y2="13.8" strokeWidth={strokeWidth * 0.55} opacity="0.5"/>
+    <path d="M12 3C9.5 6.5 4 9.5 4 13.5C4 16 5.8 17.5 8 17.5C9.5 17.5 10.8 16.8 12 15.5C13.2 16.8 14.5 17.5 16 17.5C18.2 17.5 20 16 20 13.5C20 9.5 14.5 6.5 12 3Z" fill={color}/>
+    <line x1="12" y1="15.5" x2="12" y2="20"/><line x1="9" y1="20" x2="15" y2="20"/>
+  </svg>
+);
+
+const RunOf3Icon = ({ size = 24, strokeWidth = 1.5, color = 'currentColor', ...props }) => (
+  <svg width={size} height={size} viewBox="4 3 16 13" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <rect x="9.25" y="5" width="5.5" height="8" rx="0.8" transform="rotate(-16, 12, 18)" fill={CARD_BG}/>
+    <rect x="9.25" y="5" width="5.5" height="8" rx="0.8" transform="rotate(0, 12, 18)" fill={CARD_BG}/>
+    <rect x="9.25" y="5" width="5.5" height="8" rx="0.8" transform="rotate(16, 12, 18)" fill={CARD_BG}/>
+  </svg>
+);
+
+const RunOf4Icon = ({ size = 24, strokeWidth = 1.5, color = 'currentColor', ...props }) => (
+  <svg width={size} height={size} viewBox="2 2 20 14" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <rect x="9.5" y="5" width="5" height="7.5" rx="0.7" transform="rotate(-22, 12, 18)" fill={CARD_BG}/>
+    <rect x="9.5" y="5" width="5" height="7.5" rx="0.7" transform="rotate(-7, 12, 18)" fill={CARD_BG}/>
+    <rect x="9.5" y="5" width="5" height="7.5" rx="0.7" transform="rotate(7, 12, 18)" fill={CARD_BG}/>
+    <rect x="9.5" y="5" width="5" height="7.5" rx="0.7" transform="rotate(22, 12, 18)" fill={CARD_BG}/>
+  </svg>
+);
+
+const RunOf6Icon = ({ size = 24, strokeWidth = 1.5, color = 'currentColor', ...props }) => (
+  <svg width={size} height={size} viewBox="2 -1 20 18" fill="none" stroke={color} strokeWidth={strokeWidth * 0.75} strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <rect x="3.5" y="1.5" width="4.5" height="6.5" rx="0.6" transform="rotate(-14, 6.5, 11)" fill={CARD_BG}/>
+    <rect x="3.5" y="1.5" width="4.5" height="6.5" rx="0.6" transform="rotate(0, 6.5, 11)" fill={CARD_BG}/>
+    <rect x="3.5" y="1.5" width="4.5" height="6.5" rx="0.6" transform="rotate(14, 6.5, 11)" fill={CARD_BG}/>
+    <rect x="14" y="10" width="4.5" height="6.5" rx="0.6" transform="rotate(-14, 17, 19.5)" fill={CARD_BG}/>
+    <rect x="14" y="10" width="4.5" height="6.5" rx="0.6" transform="rotate(0, 17, 19.5)" fill={CARD_BG}/>
+    <rect x="14" y="10" width="4.5" height="6.5" rx="0.6" transform="rotate(14, 17, 19.5)" fill={CARD_BG}/>
+  </svg>
+);
+
+const RunOf7Icon = ({ size = 24, strokeWidth = 1.5, color = 'currentColor', ...props }) => (
+  <svg width={size} height={size} viewBox="1 -1 22 18" fill="none" stroke={color} strokeWidth={strokeWidth * 0.75} strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <rect x="3" y="1.5" width="4.2" height="6" rx="0.6" transform="rotate(-19, 6, 10.5)" fill={CARD_BG}/>
+    <rect x="3" y="1.5" width="4.2" height="6" rx="0.6" transform="rotate(-6, 6, 10.5)" fill={CARD_BG}/>
+    <rect x="3" y="1.5" width="4.2" height="6" rx="0.6" transform="rotate(6, 6, 10.5)" fill={CARD_BG}/>
+    <rect x="3" y="1.5" width="4.2" height="6" rx="0.6" transform="rotate(19, 6, 10.5)" fill={CARD_BG}/>
+    <rect x="14" y="10" width="4.5" height="6.5" rx="0.6" transform="rotate(-14, 17, 19.5)" fill={CARD_BG}/>
+    <rect x="14" y="10" width="4.5" height="6.5" rx="0.6" transform="rotate(0, 17, 19.5)" fill={CARD_BG}/>
+    <rect x="14" y="10" width="4.5" height="6.5" rx="0.6" transform="rotate(14, 17, 19.5)" fill={CARD_BG}/>
+  </svg>
+);
+
+const StraightIcon = ({ size = 24, strokeWidth = 1.5, color = 'currentColor', ...props }) => (
+  <svg width={size} height={size} viewBox="3 3 18 14" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <rect x="9" y="5.5" width="5.2" height="7.5" rx="0.7" transform="rotate(-20, 12, 18)" fill={CARD_BG}/>
+    <rect x="9" y="5.5" width="5.2" height="7.5" rx="0.7" transform="rotate(-10, 12, 18)" fill={CARD_BG}/>
+    <rect x="9" y="5.5" width="5.2" height="7.5" rx="0.7" transform="rotate(0, 12, 18)" fill={CARD_BG}/>
+    <rect x="9" y="5.5" width="5.2" height="7.5" rx="0.7" transform="rotate(10, 12, 18)" fill={CARD_BG}/>
+    <rect x="9" y="5.5" width="5.2" height="7.5" rx="0.7" transform="rotate(20, 12, 18)" fill={CARD_BG}/>
+  </svg>
+);
+
+const StraightFlushIcon = ({ size = 24, strokeWidth = 1.5, color = 'currentColor', ...props }) => (
+  <svg width={size} height={size} viewBox="1 2 22 14" fill="none" stroke={color} strokeWidth={strokeWidth * 0.7} strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <rect x="9.2" y="4" width="5.6" height="8" rx="0.8" transform="rotate(-24, 12, 19)" fill={CARD_BG}/>
+    <rect x="9.2" y="4" width="5.6" height="8" rx="0.8" transform="rotate(-12, 12, 19)" fill={CARD_BG}/>
+    <rect x="9.2" y="4" width="5.6" height="8" rx="0.8" transform="rotate(0, 12, 19)" fill={CARD_BG}/>
+    <rect x="9.2" y="4" width="5.6" height="8" rx="0.8" transform="rotate(12, 12, 19)" fill={CARD_BG}/>
+    <rect x="9.2" y="4" width="5.6" height="8" rx="0.8" transform="rotate(24, 12, 19)" fill={CARD_BG}/>
+    <path d="M14.5 6.3 L15.6 4.8 L16.7 6.3 L15.6 7.8Z" fill={color} stroke="none"/>
+  </svg>
+);
+
+const FullHouseIcon = ({ size = 24, strokeWidth = 1.5, color = 'currentColor', ...props }) => (
+  <svg width={size} height={size} viewBox="1 1 22 21" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <rect x="3.5" y="2" width="4.8" height="7" rx="0.6" transform="rotate(-12, 12, 8)" fill={CARD_BG}/>
+    <rect x="9.6" y="2" width="4.8" height="7" rx="0.6" fill={CARD_BG}/>
+    <rect x="15.7" y="2" width="4.8" height="7" rx="0.6" transform="rotate(12, 12, 8)" fill={CARD_BG}/>
+    <rect x="5.5" y="12.5" width="5" height="7.5" rx="0.7" transform="rotate(-8, 12, 19)" fill={CARD_BG}/>
+    <rect x="13.5" y="12.5" width="5" height="7.5" rx="0.7" transform="rotate(8, 12, 19)" fill={CARD_BG}/>
+  </svg>
+);
+
+const TwoPairIcon = ({ size = 24, strokeWidth = 1.5, color = 'currentColor', ...props }) => (
+  <svg width={size} height={size} viewBox="-1 4 26 12" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <rect x="1" y="5" width="4.5" height="7.5" rx="0.6"/>
+    <rect x="6" y="5" width="4.5" height="7.5" rx="0.6"/>
+    <rect x="13.5" y="5" width="4.5" height="7.5" rx="0.6"/>
+    <rect x="18.5" y="5" width="4.5" height="7.5" rx="0.6"/>
+    <path d="M2 14.5 L5.25 16 L8.5 14.5" fill="none" strokeWidth={strokeWidth * 0.55} opacity="0.4"/>
+    <path d="M14.5 14.5 L17.75 16 L21 14.5" fill="none" strokeWidth={strokeWidth * 0.55} opacity="0.4"/>
+  </svg>
+);
+
+const TwoTriplesIcon = ({ size = 24, strokeWidth = 1.5, color = 'currentColor', ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth * 0.75} strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <rect x="1.5" y="3" width="5.5" height="8" rx="0.7" fill={CARD_BG}/>
+    <rect x="3" y="6.5" width="5.5" height="8" rx="0.7" fill={CARD_BG}/>
+    <rect x="4.5" y="10" width="5.5" height="8" rx="0.7" fill={CARD_BG}/>
+    <rect x="13" y="3" width="5.5" height="8" rx="0.7" fill={CARD_BG}/>
+    <rect x="14.5" y="6.5" width="5.5" height="8" rx="0.7" fill={CARD_BG}/>
+    <rect x="16" y="10" width="5.5" height="8" rx="0.7" fill={CARD_BG}/>
+  </svg>
+);
+
+const AceHighIcon = ({ size = 24, strokeWidth = 1.5, color = 'currentColor', ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <rect x="5" y="2" width="14" height="20" rx="1.5"/>
+    <path d="M10 16 L12 7 L14 16"/><line x1="10.8" y1="13" x2="13.2" y2="13"/>
+    <path d="M8 5C7.4 5.7 6.8 6.2 6.8 6.8C6.8 7.2 7.1 7.5 7.5 7.5C7.7 7.5 7.9 7.3 8 7.1C8.1 7.3 8.3 7.5 8.5 7.5C8.9 7.5 9.2 7.2 9.2 6.8C9.2 6.2 8.6 5.7 8 5Z" fill={color} stroke="none"/>
+    <line x1="8" y1="7.3" x2="8" y2="8.3" strokeWidth={strokeWidth * 0.4}/>
+    <line x1="7.3" y1="8.3" x2="8.7" y2="8.3" strokeWidth={strokeWidth * 0.4}/>
+  </svg>
+);
+
+const AscendingTop5Icon = ({ size = 24, strokeWidth = 1.5, color = 'currentColor', ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth * 0.75} strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <rect x="1" y="16" width="3.8" height="5.5" rx="0.5"/>
+    <rect x="5.5" y="12.5" width="3.8" height="9" rx="0.5"/>
+    <rect x="10" y="9" width="3.8" height="12.5" rx="0.5"/>
+    <rect x="14.5" y="5" width="3.8" height="16.5" rx="0.5"/>
+    <rect x="19" y="1.5" width="3.8" height="20" rx="0.5"/>
+    <polyline points="5,3 12,0.8 19,3" strokeWidth={strokeWidth * 0.65} fill="none" opacity="0.4"/>
+    <line x1="12" y1="0.8" x2="12" y2="3" strokeWidth={strokeWidth * 0.65} opacity="0.4"/>
+  </svg>
+);
+
+const DailyCrownIcon = ({ size = 24, strokeWidth = 1.5, color = 'currentColor', ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <line x1="12" y1="1" x2="12" y2="3" strokeWidth={strokeWidth * 0.6} opacity="0.5"/>
+    <line x1="8" y1="2" x2="9" y2="3.5" strokeWidth={strokeWidth * 0.6} opacity="0.5"/>
+    <line x1="16" y1="2" x2="15" y2="3.5" strokeWidth={strokeWidth * 0.6} opacity="0.5"/>
+    <path d="M4 17L5.5 9L9 13L12 7L15 13L18.5 9L20 17Z"/>
+    <rect x="4" y="17" width="16" height="3" rx="0.5"/>
+  </svg>
+);
+
+const LuckySevenIcon = ({ size = 24, strokeWidth = 1.5, color = 'currentColor', ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <rect x="4" y="3" width="16" height="18" rx="1.5" strokeWidth={strokeWidth * 0.55} opacity="0.25"/>
+    <path d="M8.5 7 L15.5 7 L10.5 18" strokeWidth={strokeWidth * 1.6}/>
+    <line x1="17" y1="4.5" x2="18.5" y2="3" strokeWidth={strokeWidth * 0.65} opacity="0.5"/>
+    <line x1="19" y1="5.5" x2="20" y2="4.5" strokeWidth={strokeWidth * 0.55} opacity="0.35"/>
+    <line x1="18" y1="7.5" x2="19.5" y2="7" strokeWidth={strokeWidth * 0.55} opacity="0.35"/>
+  </svg>
+);
+
+const JackpotIcon = ({ size = 24, strokeWidth = 1.5, color = 'currentColor', ...props }) => (
+  <svg width={size} height={size} viewBox="1 2 22 19" fill="none" stroke={color} strokeWidth={strokeWidth * 0.75} strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <rect x="9.5" y="6" width="5" height="7" rx="0.6" transform="rotate(-35, 12, 12)" fill={CARD_BG}/>
+    <rect x="9.5" y="6" width="5" height="7" rx="0.6" transform="rotate(-12, 12, 12)" fill={CARD_BG}/>
+    <rect x="9.5" y="6" width="5" height="7" rx="0.6" transform="rotate(12, 12, 12)" fill={CARD_BG}/>
+    <rect x="9.5" y="6" width="5" height="7" rx="0.6" transform="rotate(35, 12, 12)" fill={CARD_BG}/>
+    <line x1="3" y1="4" x2="5" y2="6" strokeWidth={strokeWidth * 0.55} opacity="0.4"/>
+    <line x1="21" y1="4" x2="19" y2="6" strokeWidth={strokeWidth * 0.55} opacity="0.4"/>
+    <line x1="2.5" y1="12" x2="4.5" y2="12" strokeWidth={strokeWidth * 0.55} opacity="0.4"/>
+    <line x1="21.5" y1="12" x2="19.5" y2="12" strokeWidth={strokeWidth * 0.55} opacity="0.4"/>
+    <line x1="4" y1="19" x2="6" y2="17.5" strokeWidth={strokeWidth * 0.55} opacity="0.4"/>
+    <line x1="20" y1="19" x2="18" y2="17.5" strokeWidth={strokeWidth * 0.55} opacity="0.4"/>
+  </svg>
+);
+
+const VarietyPackIcon = ({ size = 24, strokeWidth = 1.5, color = 'currentColor', ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={color} stroke={color} strokeWidth={strokeWidth * 0.55} strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M6 3.5C5 4.8 3.5 5.7 3.5 6.8C3.5 7.5 4 7.9 4.6 7.9C5 7.9 5.3 7.6 5.5 7.3L6 7.3C6.2 7.6 6.5 7.8 6.7 7.9C7 7.9 7.2 7.7 7.5 7.4C8 7 8.5 6.5 8.5 6.8C8.5 5.7 7 4.8 6 3.5Z" stroke="none"/>
+    <line x1="6" y1="7.5" x2="6" y2="9"/><line x1="5" y1="9" x2="7" y2="9"/>
+    <path d="M18 4.5C17.3 3.8 16.2 3.8 15.8 4.8C15.8 5.6 18 7.8 18 7.8C18 7.8 20.2 5.6 20.2 4.8C19.8 3.8 18.7 3.8 18 4.5Z" stroke="none"/>
+    <path d="M6 13.5 L8 16.5 L6 19.5 L4 16.5Z" stroke="none"/>
+    <circle cx="18" cy="14.5" r="1.6" stroke="none"/>
+    <circle cx="16.2" cy="16.8" r="1.6" stroke="none"/>
+    <circle cx="19.8" cy="16.8" r="1.6" stroke="none"/>
+    <line x1="18" y1="17.5" x2="18" y2="19.5"/><line x1="17" y1="19.5" x2="19" y2="19.5"/>
+  </svg>
+);
+
 // ============ FINDS CATALOGUE — all 35 discoverable patterns ============
 const FINDS_CATALOGUE = [
   { id: 'pair', name: 'Pair', Icon: Copy, rarity: 'Common', desc: 'Two same-rank cards adjacent' },
   { id: 'suited-3', name: 'Suited Three', Icon: Shield, rarity: 'Common', desc: 'Three same-suit in a row' },
-  { id: 'blackjack', name: 'Blackjack', Icon: Target, rarity: 'Common', desc: 'Ace + 10-value card adjacent' },
-  { id: 'run-3', name: 'Run of Three', Icon: TrendingUp, rarity: 'Common', desc: 'Three cards in rank sequence' },
+  { id: 'blackjack', name: 'Blackjack', Icon: BlackjackIcon, rarity: 'Common', desc: 'Ace + 10-value card adjacent' },
+  { id: 'run-3', name: 'Run of Three', Icon: RunOf3Icon, rarity: 'Common', desc: 'Three cards in rank sequence' },
   { id: 'three-pairs', name: 'Three Pairs', Icon: Layers, rarity: 'Uncommon', desc: 'Three+ separate pairs in one shuffle' },
-  { id: 'suited-blackjack', name: 'Suited Blackjack', Icon: ShieldCheck, rarity: 'Uncommon', desc: 'Ace + 10-value of same suit adjacent' },
+  { id: 'suited-blackjack', name: 'Suited Blackjack', Icon: SuitedBlackjackIcon, rarity: 'Uncommon', desc: 'Ace + 10-value of same suit adjacent' },
   { id: 'colour-streak-6', name: 'Colour Streak 6', Icon: Palette, rarity: 'Uncommon', desc: 'Six+ same colour in a row' },
   { id: 'suited-4', name: 'Suited Four', Icon: ShieldPlus, rarity: 'Uncommon', desc: 'Four same-suit in a row' },
   { id: 'triple', name: 'Triple', Icon: Triangle, rarity: 'Uncommon', desc: 'Three same-rank adjacent' },
   { id: 'mirror', name: 'Mirror', Icon: FlipHorizontal2, rarity: 'Uncommon', desc: '3+ rank-mirrored pairs (pos 1&52, 2&51...)' },
   { id: 'alternating-7', name: 'Alternating 7', Icon: GitBranch, rarity: 'Rare', desc: 'Seven alternating red/black' },
-  { id: 'two-pair', name: 'Two Pair', Icon: CopyCheck, rarity: 'Rare', desc: 'AABB pattern in four consecutive' },
+  { id: 'two-pair', name: 'Two Pair', Icon: TwoPairIcon, rarity: 'Rare', desc: 'AABB pattern in four consecutive' },
   { id: 'colour-streak-8', name: 'Colour Streak 8', Icon: Paintbrush, rarity: 'Rare', desc: 'Eight same colour in a row' },
   { id: 'suited-5', name: 'Suited Five', Icon: Pentagon, rarity: 'Rare', desc: 'Five same-suit consecutive' },
   { id: 'alternating-10', name: 'Alternating 10', Icon: Activity, rarity: 'Rare', desc: 'Ten alternating red/black' },
-  { id: 'perfect-blackjack', name: 'Perfect Blackjack', Icon: ShieldHalf, rarity: 'Rare', desc: 'A♠ + J♠ adjacent' },
-  { id: 'straight', name: 'Straight', Icon: ArrowUp, rarity: 'Rare', desc: 'Five cards in rank sequence' },
-  { id: 'ace-high', name: 'Ace High', Icon: Star, rarity: 'Rare', desc: 'Ace of Spades in position 1' },
-  { id: 'run-4', name: 'Run of Four', Icon: TrendingUp, rarity: 'Rare', desc: 'Four in rank sequence' },
+  { id: 'perfect-blackjack', name: 'Perfect Blackjack', Icon: PerfectBlackjackIcon, rarity: 'Rare', desc: 'A♠ + J♠ adjacent' },
+  { id: 'straight', name: 'Straight', Icon: StraightIcon, rarity: 'Rare', desc: 'Five cards in rank sequence' },
+  { id: 'ace-high', name: 'Ace High', Icon: AceHighIcon, rarity: 'Rare', desc: 'Ace of Spades in position 1' },
+  { id: 'run-4', name: 'Run of Four', Icon: RunOf4Icon, rarity: 'Rare', desc: 'Four in rank sequence' },
   { id: 'colour-streak-10', name: 'Colour Streak 10', Icon: Droplets, rarity: 'Very Rare', desc: 'Ten same colour in a row' },
-  { id: 'full-house', name: 'Full House', Icon: Home, rarity: 'Very Rare', desc: 'AAABB or AABBB in five consecutive' },
+  { id: 'full-house', name: 'Full House', Icon: FullHouseIcon, rarity: 'Very Rare', desc: 'AAABB or AABBB in five consecutive' },
   { id: 'suited-6', name: 'Suited Six', Icon: Hexagon, rarity: 'Very Rare', desc: 'Six same-suit consecutive' },
-  { id: 'two-triples', name: 'Two Triples', Icon: Boxes, rarity: 'Very Rare', desc: 'Two separate three-of-a-kinds' },
-  { id: 'ascending-top-5', name: 'Ascending Top 5', Icon: ArrowUp, rarity: 'Very Rare', desc: 'First five cards in rank order' },
+  { id: 'two-triples', name: 'Two Triples', Icon: TwoTriplesIcon, Icon: Boxes, rarity: 'Very Rare', desc: 'Two separate three-of-a-kinds' },
+  { id: 'ascending-top-5', name: 'Ascending Top 5', Icon: AscendingTop5Icon, Icon: ArrowUp, rarity: 'Very Rare', desc: 'First five cards in rank order' },
   { id: 'quad', name: 'Quad', Icon: Grid2x2, rarity: 'Very Rare', desc: 'Four same-rank adjacent' },
-  { id: 'run-6', name: 'Run of Six', Icon: Activity, rarity: 'Very Rare', desc: 'Six in rank sequence' },
+  { id: 'run-6', name: 'Run of Six', Icon: RunOf6Icon, rarity: 'Very Rare', desc: 'Six in rank sequence' },
   { id: 'suited-7', name: 'Suited Seven', Icon: Octagon, rarity: 'Very Rare', desc: 'Seven same-suit consecutive' },
-  { id: 'run-7', name: 'Run of Seven', Icon: TrendingUp, rarity: 'Very Rare', desc: 'Seven in rank sequence' },
+  { id: 'run-7', name: 'Run of Seven', Icon: RunOf7Icon, rarity: 'Very Rare', desc: 'Seven in rank sequence' },
   { id: 'dead-mans-hand', name: "Dead Man's Hand", Icon: Skull, rarity: 'Extraordinary', desc: 'Two Aces + two Eights in 4 consecutive' },
   { id: 'suited-8', name: 'Suited Eight', Icon: Circle, rarity: 'Extraordinary', desc: 'Eight same-suit consecutive' },
-  { id: 'straight-flush', name: 'Straight Flush', Icon: Sparkles, rarity: 'Extraordinary', desc: 'Five consecutive, same suit, in order' },
+  { id: 'straight-flush', name: 'Straight Flush', Icon: StraightFlushIcon, rarity: 'Extraordinary', desc: 'Five consecutive, same suit, in order' },
   { id: 'two-quads', name: 'Two Quads', Icon: LayoutGrid, rarity: 'Extraordinary', desc: 'Two separate four-of-a-kinds' },
   { id: 'solitaire-5', name: 'Solitaire 5', Icon: Heart, rarity: 'Extraordinary', desc: '5 consecutive: alternating colour, descending rank' },
   { id: 'factory-run-4', name: 'Factory Run 4+', Icon: Factory, rarity: 'Extraordinary', desc: '4+ consecutive cards in factory deck order' },
@@ -145,7 +341,7 @@ const TROPHY_ACHIEVEMENTS = [
   { id: 'century-club', name: 'Century Club', Icon: Award, desc: '100 total shuffles', category: 'Shuffle Totals', unlocked: false },
   { id: 'full-orbit', name: 'Full Orbit', Icon: Globe, desc: '365 total shuffles', category: 'Shuffle Totals', unlocked: false },
   { id: 'close-call', name: 'Close Call', Icon: Crosshair, desc: 'Match 5+ positions', category: 'Match Milestones', unlocked: true },
-  { id: 'lucky-seven', name: 'Lucky Seven', Icon: Diamond, desc: 'Match 7+ positions', category: 'Match Milestones', unlocked: false },
+  { id: 'lucky-seven', name: 'Lucky Seven', Icon: LuckySevenIcon, desc: 'Match 7+ positions', category: 'Match Milestones', unlocked: false },
   { id: 'near-miss', name: 'Near Miss', Icon: Sparkles, desc: 'Match 8+ positions', category: 'Match Milestones', unlocked: false },
   { id: 'the-impossible', name: 'The Impossible', Icon: Zap, desc: 'Match 9+ positions', category: 'Match Milestones', unlocked: false },
   { id: 'ghost-town', name: 'Ghost Town', Icon: Ghost, desc: 'Get a 0-match', category: 'Match Experiences', unlocked: false },
@@ -175,14 +371,14 @@ const TROPHY_ACHIEVEMENTS = [
   { id: 'monday-motivation', name: 'Monday Motivation', Icon: Flame, desc: 'Shuffle on a Monday', category: 'Fun & Personality', unlocked: true },
   { id: 'creature-of-habit', name: 'Creature of Habit', Icon: Clock, desc: 'Same hour, 7 days running', category: 'Fun & Personality', unlocked: false },
   { id: 'comeback-kid', name: 'Comeback Kid', Icon: RotateCcw, desc: 'Shuffle again after 7+ days away', category: 'Fun & Personality', unlocked: false },
-  { id: 'jackpot', name: 'Jackpot', Icon: Sparkles, desc: '8+ finds in a single shuffle', category: 'Per-Shuffle Moments', unlocked: false },
+  { id: 'jackpot', name: 'Jackpot', Icon: JackpotIcon, desc: '8+ finds in a single shuffle', category: 'Per-Shuffle Moments', unlocked: false },
   { id: 'phantom', name: 'Phantom', Icon: CircleOff, desc: 'Zero matches AND zero factory positions', category: 'Per-Shuffle Moments', unlocked: false },
   { id: 'new-horizons', name: 'New Horizons', Icon: Sunrise, desc: '3+ new finds in a single shuffle', category: 'Per-Shuffle Moments', unlocked: false },
-  { id: 'variety-pack', name: 'Variety Pack', Icon: Boxes, desc: 'Finds from 4+ rarity tiers in one shuffle', category: 'Variety', unlocked: false },
+  { id: 'variety-pack', name: 'Variety Pack', Icon: VarietyPackIcon, desc: 'Finds from 4+ rarity tiers in one shuffle', category: 'Variety', unlocked: false },
   { id: 'hat-trick', name: 'Hat Trick', Icon: Repeat, desc: 'Same match count three days in a row', category: 'Variety', unlocked: false },
   { id: 'connoisseur', name: 'Connoisseur', Icon: Wine, desc: 'Finds from all 6 rarity tiers', category: 'Variety', unlocked: false },
   { id: 'anniversary', name: 'Anniversary', Icon: Cake, desc: 'Shuffle on your one-year anniversary', category: 'Lifetime', unlocked: false },
-  { id: 'daily-crown', name: 'Daily Crown', Icon: Crown, desc: 'Highest match of the day (ties count)', category: 'Lifetime', unlocked: false },
+  { id: 'daily-crown', name: 'Daily Crown', Icon: DailyCrownIcon, desc: 'Highest match of the day (ties count)', category: 'Lifetime', unlocked: false },
   { id: 'encore', name: 'Encore', Icon: RefreshCw, desc: 'Watch your shuffle again', category: 'Keepsakes', unlocked: true },
   { id: 'imprint', name: 'Imprint', Icon: Download, desc: 'Save your shuffle to keep', category: 'Keepsakes', unlocked: false },
   { id: 'completionist', name: 'Completionist', Icon: Trophy, desc: 'Discover all 35 finds', category: 'The Final Card', unlocked: false, legendary: true },
@@ -996,7 +1192,7 @@ const AchievementBadge = ({ achievement, size = 'medium' }) => {
 };
 
 // ============ TROPHY CABINET ============
-const TrophyCabinet = ({ isOpen, onClose }) => {
+const TrophyCabinet = ({ isOpen, onClose, isMobile }) => {
   const [activeTab, setActiveTab] = useState('collection');
   const [hoveredFind, setHoveredFind] = useState(null);
   const [selectedFind, setSelectedFind] = useState(null);
@@ -1033,8 +1229,9 @@ const TrophyCabinet = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
-  return (
-    <div ref={overlayRef} onClick={onClose} style={{
+   return (
+    <>
+      <div ref={overlayRef} onClick={onClose} style={{
       position: 'fixed', inset: 0, zIndex: 1000,
       background: 'rgba(6, 6, 12, 0.92)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
       animation: 'fadeIn 0.3s ease', overflowY: 'auto',
@@ -1113,28 +1310,28 @@ const TrophyCabinet = ({ isOpen, onClose }) => {
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px',
                             marginBottom: discovered && isActive ? '6px' : '0', transition: 'margin 0.15s ease' }}>
                             <div style={{
-                              width: '28px', height: '28px', borderRadius: '7px',
+                              width: isMobile ? '28px' : '36px', height: isMobile ? '28px' : '36px', borderRadius: isMobile ? '7px' : '9px',
                               background: discovered ? `${color}12` : 'rgba(255,255,255,0.02)',
                               border: `1px solid ${discovered ? `${color}20` : 'rgba(255,255,255,0.035)'}`,
                               display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                               ...(discovered ? { boxShadow: `0 0 8px ${color}10` } : {}),
                             }}>
                               {discovered ? (
-                                <FindIcon size={14} strokeWidth={1.5} color={color} style={{ opacity: 0.85 }} />
+                                <FindIcon size={isMobile ? 16 : 20} strokeWidth={1.5} color={color} style={{ opacity: 0.85 }} />
                               ) : (
                                 <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.08)',
                                   fontWeight: '700', fontFamily: "'Inter', sans-serif" }}>?</span>
                               )}
                             </div>
                             <span style={{
-                              fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '13px', fontWeight: '600',
+                              fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: isMobile ? '13px' : '15px', fontWeight: '600',
                               color: discovered ? color : 'rgba(255,255,255,0.12)', letterSpacing: '0.3px',
                               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                             }}>{discovered ? find.name : '???'}</span>
                           </div>
                           {discovered && isActive && (
-                            <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '10px',
-                              color: 'rgba(255,255,255,0.4)', lineHeight: 1.4,
+                            <div style={{ fontFamily: "'Inter', sans-serif", fontSize: isMobile ? '10px' : '12px',
+                              color: 'rgba(255,255,255,0.5)', lineHeight: 1.4,
                               animation: 'fadeIn 0.2s ease', paddingLeft: '38px' }}>{find.desc}</div>
                           )}
                         </div>
@@ -1187,25 +1384,25 @@ const TrophyCabinet = ({ isOpen, onClose }) => {
                           transition: 'all 0.2s ease',
                         }}>
                           <div style={{
-                            width: '32px', height: '32px', borderRadius: '8px',
+                            width: isMobile ? '32px' : (isFinalCard ? '48px' : '40px'), height: isMobile ? '32px' : (isFinalCard ? '48px' : '40px'), borderRadius: isMobile ? '8px' : '10px',
                             background: ach.unlocked ? `${accentColor}12` : 'rgba(255,255,255,0.02)',
                             border: `1px solid ${ach.unlocked ? `${accentColor}20` : 'rgba(255,255,255,0.03)'}`,
                             display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                           }}>
-                            <IconComponent size={16} strokeWidth={1.5}
+                            <IconComponent size={isMobile ? 16 : (isFinalCard ? 24 : 20)} strokeWidth={1.5}
                               color={ach.unlocked ? accentColor : 'rgba(255,255,255,0.1)'}
                               style={{ opacity: ach.unlocked ? 0.85 : 0.4 }} />
                           </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{
                               fontFamily: "'Cormorant Garamond', Georgia, serif",
-                              fontSize: isFinalCard ? '15px' : '13px', fontWeight: '600',
+                              fontSize: isFinalCard ? (isMobile ? '15px' : '20px') : (isMobile ? '13px' : '15px'), fontWeight: '600',
                               color: ach.unlocked ? (isLegendary ? '#fbbf24' : '#ffffff') : 'rgba(255,255,255,0.15)',
                               letterSpacing: isFinalCard ? '1px' : '0.3px',
                             }}>{ach.unlocked ? ach.name : '???'}</div>
                             <div style={{
-                              fontFamily: "'Inter', sans-serif", fontSize: '10px',
-                              color: ach.unlocked ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.1)',
+                              fontFamily: "'Inter', sans-serif", fontSize: isMobile ? '10px' : '12px',
+                              color: ach.unlocked ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.15)',
                               marginTop: '1px', lineHeight: 1.3,
                             }}>{ach.desc}</div>
                           </div>
@@ -1227,7 +1424,7 @@ const TrophyCabinet = ({ isOpen, onClose }) => {
           </div>
         )}
 
-        {/* Close hint */}
+{/* Close hint */}
         <div onClick={onClose} style={{
           textAlign: 'center', marginTop: '36px', padding: '14px 24px', cursor: 'pointer',
         }}>
@@ -1238,24 +1435,25 @@ const TrophyCabinet = ({ isOpen, onClose }) => {
           }}>Tap anywhere to close</span>
         </div>
       </div>
+    </div>                            {/* ← this closes the overlay */}
 
-      {/* Scroll-to-top */}
-      {showScrollTop && (
-        <div onClick={scrollToTop} style={{
-          position: 'fixed', bottom: '28px', right: '28px',
-          width: '42px', height: '42px', borderRadius: '50%',
-          background: 'rgba(20, 20, 35, 0.85)',
-          border: '1px solid rgba(255,255,255,0.12)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          cursor: 'pointer', animation: 'fadeIn 0.3s ease',
-          backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-          zIndex: 1010, boxShadow: '0 2px 12px rgba(0,0,0,0.4)',
-        }}>
-          <ChevronUp size={20} strokeWidth={1.5} color="rgba(255,255,255,0.55)" />
-        </div>
-      )}
-    </div>
-  );
+    {/* Scroll-to-top — OUTSIDE the overlay so position:fixed works */}
+    {showScrollTop && (
+      <div onClick={scrollToTop} style={{
+        position: 'fixed', bottom: '28px', right: '28px',
+        width: '42px', height: '42px', borderRadius: '50%',
+        background: 'rgba(20, 20, 35, 0.85)',
+        border: '1px solid rgba(255,255,255,0.12)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        cursor: 'pointer', animation: 'fadeIn 0.3s ease',
+        backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+        zIndex: 1010, boxShadow: '0 2px 12px rgba(0,0,0,0.4)',
+      }}>
+        <ChevronUp size={20} strokeWidth={1.5} color="rgba(255,255,255,0.55)" />
+      </div>
+    )}
+  </>                                
+);
 };
 
 // Stat Card Component
@@ -3492,7 +3690,7 @@ export default function DailyShuffleFinal() {
         onOpenProvenance={() => setShowProvenance(true)}
       />
       <ViewToggle view={view} setView={setView} />
-      <TrophyCabinet isOpen={showAchievements} onClose={() => setShowAchievements(false)} />
+      <TrophyCabinet isOpen={showAchievements} onClose={() => setShowAchievements(false)} isMobile={isMobile} />
         <ShareModal
         isOpen={showShareCard}
         onClose={() => setShowShareCard(false)}
