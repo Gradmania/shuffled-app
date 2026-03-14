@@ -321,12 +321,6 @@ const FINDS_RARITY_COLORS = {
 };
 const FINDS_RARITY_ORDER = ['Common', 'Uncommon', 'Rare', 'Very Rare', 'Extraordinary', 'Legendary'];
 
-// Simulated discovered finds — will be replaced with real user data from backend
-const DISCOVERED_FIND_IDS = new Set([
-  'pair', 'suited-3', 'blackjack', 'run-3',
-  'three-pairs', 'suited-blackjack', 'colour-streak-6', 'suited-4', 'triple',
-  'alternating-7', 'two-pair', 'colour-streak-8', 'colour-streak-10',
-]);
 
 // ============ ACHIEVEMENTS — 52 for 52 cards ============
 const TROPHY_ACHIEVEMENTS = [
@@ -1192,15 +1186,15 @@ const AchievementBadge = ({ achievement, size = 'medium' }) => {
 };
 
 // ============ TROPHY CABINET ============
-const TrophyCabinet = ({ isOpen, onClose, isMobile }) => {
+const TrophyCabinet = ({ isOpen, onClose, isMobile, discoveredFindIds = new Set(), unlockedAchievementIds = new Set() }) => {
   const [activeTab, setActiveTab] = useState('collection');
   const [hoveredFind, setHoveredFind] = useState(null);
   const [selectedFind, setSelectedFind] = useState(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const overlayRef = useRef(null);
 
-  const discoveredCount = FINDS_CATALOGUE.filter(f => DISCOVERED_FIND_IDS.has(f.id)).length;
-  const unlockedCount = TROPHY_ACHIEVEMENTS.filter(a => a.unlocked).length;
+  const discoveredCount = FINDS_CATALOGUE.filter(f => discoveredFindIds.has(f.id)).length;
+  const unlockedCount = TROPHY_ACHIEVEMENTS.filter(a => unlockedAchievementIds.has(a.id)).length;
 
   const findsByRarity = FINDS_RARITY_ORDER.map(rarity => ({
     rarity, color: FINDS_RARITY_COLORS[rarity],
@@ -1209,7 +1203,10 @@ const TrophyCabinet = ({ isOpen, onClose, isMobile }) => {
 
   const achievementsByCategory = TROPHY_CATEGORY_ORDER.map(cat => ({
     category: cat, color: TROPHY_CATEGORY_COLORS[cat],
-    achievements: TROPHY_ACHIEVEMENTS.filter(a => a.category === cat),
+    achievements: TROPHY_ACHIEVEMENTS.filter(a => a.category === cat).map(a => ({
+      ...a,
+      unlocked: unlockedAchievementIds.has(a.id),
+    })),
   })).filter(g => g.achievements.length > 0);
 
   useEffect(() => {
@@ -1279,7 +1276,7 @@ const TrophyCabinet = ({ isOpen, onClose, isMobile }) => {
         {activeTab === 'collection' && (
           <div style={{ animation: 'fadeIn 0.3s ease' }}>
             {findsByRarity.map(({ rarity, color, finds }) => {
-              const discoveredInTier = finds.filter(f => DISCOVERED_FIND_IDS.has(f.id)).length;
+              const discoveredInTier = finds.filter(f => discoveredFindIds.has(f.id)).length;
               return (
                 <div key={rarity} style={{ marginBottom: '24px' }}>
                   <div style={{
@@ -1294,7 +1291,7 @@ const TrophyCabinet = ({ isOpen, onClose, isMobile }) => {
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(155px, 1fr))', gap: '8px' }}>
                     {finds.map(find => {
                       const FindIcon = find.Icon;
-                      const discovered = DISCOVERED_FIND_IDS.has(find.id);
+                      const discovered = discoveredFindIds.has(find.id);
                       const isActive = selectedFind === find.id || hoveredFind === find.id;
                       return (
                         <div key={find.id}
@@ -3609,6 +3606,9 @@ export default function DailyShuffleFinal() {
   const [isNewPersonalBest, setIsNewPersonalBest] = useState(false);
   const [isTodaysLeader, setIsTodaysLeader] = useState(false);
   const [showShareCard, setShowShareCard] = useState(false);
+  const [discoveredFindIds, setDiscoveredFindIds] = useState(new Set());
+  const [unlockedAchievementIds, setUnlockedAchievementIds] = useState(new Set());
+  const [newAchievements, setNewAchievements] = useState([]);
 
   useEffect(() => {
     fetch('https://shuffled-production.up.railway.app/api/stats', {
@@ -3622,6 +3622,12 @@ export default function DailyShuffleFinal() {
         if (data.user) {
           setUserData(data.user);
           setStreak(data.user.streak);
+          if (data.user.discoveredFinds) {
+            setDiscoveredFindIds(new Set(data.user.discoveredFinds));
+          }
+          if (data.user.unlockedAchievements) {
+            setUnlockedAchievementIds(new Set(data.user.unlockedAchievements));
+          }
         }
       })
       .catch(err => console.error('Stats fetch error:', err));
@@ -3639,7 +3645,9 @@ export default function DailyShuffleFinal() {
     }, 90);
 
     // Call the real API
-    const response = await fetch('https://shuffled-production.up.railway.app/api/shuffle', {
+    const localHour = new Date().getHours();
+    const localDay = new Date().getDay();
+    const response = await fetch(`https://shuffled-production.up.railway.app/api/shuffle?localHour=${localHour}&localDay=${localDay}`, {
       credentials: 'include',
     });
     const data = await response.json();
@@ -3663,6 +3671,23 @@ export default function DailyShuffleFinal() {
       setStreak(data.user ? data.user.streak : 0);
       setIsNewPersonalBest(data.user ? data.user.isNewPersonalBest : false);
       setIsTodaysLeader(data.user ? data.user.isTodaysLeader : false);
+      if (data.finds) {
+        setDiscoveredFindIds(prev => {
+          const next = new Set(prev);
+          data.finds.forEach(f => next.add(f.id));
+          return next;
+        });
+      }
+      if (data.newAchievements && data.newAchievements.length > 0) {
+        setNewAchievements(data.newAchievements);
+        setUnlockedAchievementIds(prev => {
+          const next = new Set(prev);
+          data.newAchievements.forEach(id => next.add(id));
+          return next;
+        });
+      } else {
+        setNewAchievements([]);
+      }
       setIsShuffling(false);
       setView('post-shuffle');
       setTimeout(() => window.scrollTo(0, 0), 50);
@@ -3690,7 +3715,7 @@ export default function DailyShuffleFinal() {
         onOpenProvenance={() => setShowProvenance(true)}
       />
       <ViewToggle view={view} setView={setView} />
-      <TrophyCabinet isOpen={showAchievements} onClose={() => setShowAchievements(false)} isMobile={isMobile} />
+      <TrophyCabinet isOpen={showAchievements} onClose={() => setShowAchievements(false)} isMobile={isMobile} discoveredFindIds={discoveredFindIds} unlockedAchievementIds={unlockedAchievementIds} />
         <ShareModal
         isOpen={showShareCard}
         onClose={() => setShowShareCard(false)}
@@ -3743,7 +3768,7 @@ export default function DailyShuffleFinal() {
             isNewPersonalBest={isNewPersonalBest}
             streak={streak}
             isTodaysLeader={isTodaysLeader}
-            newAchievements={[]}
+            newAchievements={newAchievements}
             onOpenAchievements={() => setShowAchievements(true)}
             shuffleHash={shuffleHash}
             detectedHands={[]}
