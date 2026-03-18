@@ -416,15 +416,6 @@ const shuffleDeck = (deck) => {
   return shuffled;
 };
 
-// Generate a fake verification hash for demo
-const generateHash = () => {
-  const chars = '0123456789abcdef';
-  let hash = '';
-  for (let i = 0; i < 64; i++) {
-    hash += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return hash;
-};
 
 // ============ STAR FIELD BACKGROUND ============
 // Generates a static star field to create depth in the background
@@ -794,7 +785,7 @@ const Header = ({ isFirstTime, streak, showFull = true, onOpenProvenance, todayS
 );
 
 // How It Works / Provenance Panel
-const ProvenancePanel = ({ isOpen, onClose, shuffleHash, dailySeed }) => {
+const ProvenancePanel = ({ isOpen, onClose, shuffleHash }) => {
   if (!isOpen) return null;
   
   return (
@@ -886,14 +877,14 @@ const ProvenancePanel = ({ isOpen, onClose, shuffleHash, dailySeed }) => {
               margin: 0,
               lineHeight: 1.7,
             }}>
-              Every shuffle in this experiment is <strong style={{ color: '#34d399' }}>cryptographically verified</strong> and 
-              publicly auditable. We can't manipulate results, and neither can you. Here's exactly how it works.
+              Every shuffle is generated with <strong style={{ color: '#34d399' }}>cryptographic-grade randomness</strong> and 
+              verified with a SHA-256 hash. We can't manipulate results, and neither can you. Here's exactly how it works.
             </p>
           </div>
           
           {/* How it works sections */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {/* Step 1: Entropy */}
+            {/* Step 1: Randomness */}
             <div style={{
               background: 'rgba(255,255,255,0.02)',
               borderRadius: '16px',
@@ -913,30 +904,14 @@ const ProvenancePanel = ({ isOpen, onClose, shuffleHash, dailySeed }) => {
                   color: '#a78bfa',
                   fontWeight: '600',
                 }}>1</div>
-                <h3 style={{ margin: 0, fontSize: '16px', color: '#fff' }}>True Random Entropy</h3>
+                <h3 style={{ margin: 0, fontSize: '16px', color: '#fff' }}>Cryptographic Randomness</h3>
               </div>
               <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', margin: 0, lineHeight: 1.6 }}>
-                We source randomness from <strong>atmospheric noise</strong> via random.org—actual 
-                radio static from the physical world. This is combined with the precise millisecond 
-                you pressed the button, making your shuffle uniquely yours.
+                Each shuffle uses <strong>Node.js crypto.randomBytes</strong> — the same cryptographic random 
+                number generator used in banking, TLS encryption, and security systems. It draws entropy from 
+                your operating system's hardware events, producing randomness that is computationally 
+                indistinguishable from true physical noise.
               </p>
-              
-              {dailySeed && (
-                <div style={{
-                  marginTop: '12px',
-                  padding: '12px',
-                  background: 'rgba(0,0,0,0.3)',
-                  borderRadius: '8px',
-                  fontFamily: 'monospace',
-                }}>
-                  <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', marginBottom: '4px' }}>
-                    TODAY'S PUBLIC SEED (from random.org)
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#a78bfa', wordBreak: 'break-all' }}>
-                    {dailySeed}
-                  </div>
-                </div>
-              )}
             </div>
             
             {/* Step 2: Algorithm */}
@@ -962,9 +937,10 @@ const ProvenancePanel = ({ isOpen, onClose, shuffleHash, dailySeed }) => {
                 <h3 style={{ margin: 0, fontSize: '16px', color: '#fff' }}>Fisher-Yates Shuffle</h3>
               </div>
               <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', margin: 0, lineHeight: 1.6 }}>
-                We use the <strong>Fisher-Yates algorithm</strong>—mathematically proven to give every 
-                possible arrangement exactly equal probability. This is the gold standard for unbiased 
-                shuffling, used in cryptography and scientific research.
+                We use the <strong>Fisher-Yates algorithm</strong> — mathematically proven to give every 
+                possible arrangement exactly equal probability. Starting from the last card and working 
+                backwards, each card is swapped with a cryptographically random position. This is the gold 
+                standard for unbiased shuffling, used in cryptography and scientific research.
               </p>
               <div style={{
                 marginTop: '12px',
@@ -989,7 +965,7 @@ const ProvenancePanel = ({ isOpen, onClose, shuffleHash, dailySeed }) => {
               </div>
             </div>
             
-            {/* Step 3: Commit-Reveal */}
+            {/* Step 3: Hash Verification */}
             <div style={{
               background: 'rgba(255,255,255,0.02)',
               borderRadius: '16px',
@@ -1009,12 +985,13 @@ const ProvenancePanel = ({ isOpen, onClose, shuffleHash, dailySeed }) => {
                   color: '#fbbf24',
                   fontWeight: '600',
                 }}>3</div>
-                <h3 style={{ margin: 0, fontSize: '16px', color: '#fff' }}>Commit-Reveal Verification</h3>
+                <h3 style={{ margin: 0, fontSize: '16px', color: '#fff' }}>SHA-256 Hash Verification</h3>
               </div>
               <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', margin: 0, lineHeight: 1.6 }}>
-                Before your cards flip, we publish a <strong>cryptographic hash</strong> of the result. 
-                After the reveal, you can verify the hash matches. This proves we didn't change anything 
-                after the fact—the shuffle was locked in before you saw it.
+                Every shuffle is accompanied by a <strong>SHA-256 cryptographic hash</strong> of the deck order. 
+                This acts as a digital fingerprint — if even one card were different, the hash would be 
+                completely different. You can independently verify that your shuffle's hash matches the cards 
+                you received.
               </p>
               
               {shuffleHash && (
@@ -1026,100 +1003,34 @@ const ProvenancePanel = ({ isOpen, onClose, shuffleHash, dailySeed }) => {
                   fontFamily: 'monospace',
                 }}>
                   <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', marginBottom: '4px' }}>
-                    YOUR SHUFFLE'S VERIFICATION HASH (SHA-256)
+                    YOUR SHUFFLE'S SHA-256 HASH
                   </div>
                   <div style={{ fontSize: '11px', color: '#fbbf24', wordBreak: 'break-all' }}>
                     {shuffleHash}
                   </div>
-                  <button style={{
-                    marginTop: '8px',
-                    padding: '6px 12px',
-                    background: 'rgba(251, 191, 36, 0.2)',
-                    border: '1px solid rgba(251, 191, 36, 0.3)',
-                    borderRadius: '6px',
-                    color: '#fbbf24',
-                    fontSize: '11px',
-                    cursor: 'pointer',
-                  }}>
-                    Verify This Shuffle →
-                  </button>
                 </div>
               )}
             </div>
-            
-            {/* Step 4: Public Audit */}
+
+            {/* Fun fact */}
             <div style={{
-              background: 'rgba(255,255,255,0.02)',
+              background: 'rgba(167, 139, 250, 0.05)',
               borderRadius: '16px',
               padding: '20px',
-              border: '1px solid rgba(255,255,255,0.05)',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                <div style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
-                  background: 'rgba(52, 211, 153, 0.2)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '14px',
-                  color: '#34d399',
-                  fontWeight: '600',
-                }}>4</div>
-                <h3 style={{ margin: 0, fontSize: '16px', color: '#fff' }}>Public Audit Log</h3>
-              </div>
-              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', margin: 0, lineHeight: 1.6 }}>
-                Every shuffle is logged with its seed, timestamp, and hash. Anyone can audit any shuffle 
-                in the experiment's history. The complete log is publicly accessible.
-              </p>
-              <div style={{
-                marginTop: '12px',
-                display: 'flex',
-                gap: '12px',
-                flexWrap: 'wrap',
-              }}>
-                <div style={{
-                  padding: '8px 12px',
-                  background: 'rgba(52, 211, 153, 0.1)',
-                  borderRadius: '8px',
-                  fontSize: '12px',
-                  color: '#34d399',
-                }}>
-                  847,293 shuffles verified
-                </div>
-                <div style={{
-                  padding: '8px 12px',
-                  background: 'rgba(52, 211, 153, 0.1)',
-                  borderRadius: '8px',
-                  fontSize: '12px',
-                  color: '#34d399',
-                }}>
-                  0 anomalies detected
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Bottom note */}
-          <div style={{
-            marginTop: '24px',
-            padding: '16px',
-            background: 'rgba(167, 139, 250, 0.1)',
-            borderRadius: '12px',
-            border: '1px solid rgba(167, 139, 250, 0.2)',
-          }}>
-            <p style={{
-              fontSize: '13px',
-              color: 'rgba(255,255,255,0.6)',
-              margin: 0,
-              lineHeight: 1.6,
+              border: '1px solid rgba(167, 139, 250, 0.1)',
               textAlign: 'center',
             }}>
-              <strong style={{ color: '#a78bfa' }}>Fun fact:</strong> A properly implemented digital shuffle 
-              is actually <em>more</em> random than a human shuffle. Studies show you need 7+ riffle shuffles 
-              to truly randomize a physical deck.
-            </p>
+              <p style={{
+                fontSize: '13px',
+                color: 'rgba(255,255,255,0.6)',
+                margin: 0,
+                lineHeight: 1.6,
+              }}>
+                <strong style={{ color: '#a78bfa' }}>Fun fact:</strong> A properly implemented digital shuffle 
+                is actually <em>more</em> random than a human shuffle. Studies show you need 7+ riffle shuffles 
+                to truly randomize a physical deck.
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -3590,8 +3501,7 @@ export default function DailyShuffleFinal() {
   const [isShuffling, setIsShuffling] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
   const [showProvenance, setShowProvenance] = useState(false);
-  const [shuffleHash] = useState(generateHash());
-  const [dailySeed] = useState(generateHash());
+  const [shuffleHash, setShuffleHash] = useState(null);
   const [matchData, setMatchData] = useState(null);
   const [totalShuffles, setTotalShuffles] = useState(0);
   const [shuffleNumber, setShuffleNumber] = useState(null);
@@ -3663,6 +3573,7 @@ export default function DailyShuffleFinal() {
       setMatchData(data.match);
       setTotalShuffles(data.totalShuffles);
       setShuffleNumber(data.shuffle.id);
+      setShuffleHash(data.shuffle.hash);
       setGlobalHighest(data.globalHighest ? data.globalHighest.count : 0);
       setTodayHighest(data.todayHighest ? data.todayHighest.count : 0);
       setFactoryCount(data.factoryCount);
@@ -3736,7 +3647,6 @@ export default function DailyShuffleFinal() {
         isOpen={showProvenance} 
         onClose={() => setShowProvenance(false)} 
         shuffleHash={shuffleHash}
-        dailySeed={dailySeed}
       />
 
       {/* Star field — creates depth in the background */}
