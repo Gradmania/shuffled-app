@@ -2818,7 +2818,7 @@ const ShareModal = ({ isOpen, onClose, matchCount, matchedWithShuffle, shuffleNu
 };
 
 // ============ POST-SHUFFLE RESULT VIEW (v4 design) ============
-const PostShuffleResultView = ({ deck, matchCount, matchedWithShuffle, matchedPositions: realMatchedPositions, totalShuffles, shuffleNumber, globalHighest, todayHighest, factoryCount, isNewPersonalBest, isTodaysLeader, newAchievements, onOpenAchievements, shuffleHash, onShare, detectedHands, finds, streak, isMobile }) => {
+const PostShuffleResultView = ({ deck, matchCount, matchedWithShuffle, matchedPositions: realMatchedPositions, totalShuffles, shuffleNumber, globalHighest, todayHighest, factoryCount, isNewPersonalBest, isTodaysLeader, newAchievements, onOpenAchievements, shuffleHash, onShare, detectedHands, finds, streak, isMobile, matchLocation }) => { 
   const [isRevealed, setIsRevealed] = useState(false);
   const [activeFind, setActiveFind] = useState(null);
   const [showFinds, setShowFinds] = useState(false);
@@ -3780,6 +3780,7 @@ export default function DailyShuffleFinal() {
             detectedHands={[]}
             finds={finds}
             isMobile={isMobile}
+            matchLocation={matchLocation}
           />
         )}
 
