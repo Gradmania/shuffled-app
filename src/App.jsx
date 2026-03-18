@@ -1383,7 +1383,7 @@ const VerificationHash = ({ hash, isVisible }) => (
       <span style={{ fontSize: '12px' }}>🔒</span>
       <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)' }}>Verification:</span>
       <span style={{ fontSize: '11px', color: '#fbbf24', fontFamily: 'monospace' }}>
-        {hash.substring(0, 8)}...{hash.substring(hash.length - 8)}
+        {hash ? `${hash.substring(0, 8)}...${hash.substring(hash.length - 8)}` : '—'}
       </span>
     </div>
   </div>
