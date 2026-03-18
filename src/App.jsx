@@ -2611,7 +2611,7 @@ const ShareCard = ({ matchCount, matchedWithShuffle, shuffleNumber, totalShuffle
 // Overlay when you tap "Share Result."
 // Contains the share card + action buttons (Share / Copy / Download).
 
-const ShareModal = ({ isOpen, onClose, matchCount, matchedWithShuffle, shuffleNumber, totalShuffles, streak, matchedPositions }) => {
+const ShareModal = ({ isOpen, onClose, matchCount, matchedWithShuffle, shuffleNumber, totalShuffles, streak, matchedPositions, unlockedAchievementIds = new Set(), setUnlockedAchievementIds }) => {
   const cardRef = useRef(null);
   const [copying, setCopying] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -2727,6 +2727,21 @@ const ShareModal = ({ isOpen, onClose, matchCount, matchedWithShuffle, shuffleNu
   };
 
   const handleDownload = async () => {
+    // Award "Imprint" achievement (save shuffle)
+    if (!unlockedAchievementIds.has('imprint')) {
+      fetch('https://shuffled-production.up.railway.app/api/achievement', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ achievementId: 'imprint' }),
+      }).then(() => {
+        setUnlockedAchievementIds(prev => {
+          const next = new Set(prev);
+          next.add('imprint');
+          return next;
+        });
+      }).catch(err => console.error('Imprint achievement error:', err));
+    }
     try {
       const blob = await generateBlob();
       if (!blob) return;
@@ -2818,7 +2833,7 @@ const ShareModal = ({ isOpen, onClose, matchCount, matchedWithShuffle, shuffleNu
 };
 
 // ============ POST-SHUFFLE RESULT VIEW (v4 design) ============
-const PostShuffleResultView = ({ deck, matchCount, matchedWithShuffle, matchedPositions: realMatchedPositions, totalShuffles, shuffleNumber, globalHighest, todayHighest, factoryCount, isNewPersonalBest, isTodaysLeader, newAchievements, onOpenAchievements, shuffleHash, onShare, detectedHands, finds, streak, isMobile, matchLocation }) => { 
+const PostShuffleResultView = ({ deck, matchCount, matchedWithShuffle, matchedPositions: realMatchedPositions, totalShuffles, shuffleNumber, globalHighest, todayHighest, factoryCount, isNewPersonalBest, isTodaysLeader, newAchievements, onOpenAchievements, shuffleHash, onShare, detectedHands, finds, streak, isMobile, matchLocation, unlockedAchievementIds = new Set(), setUnlockedAchievementIds }) => { 
   const [isRevealed, setIsRevealed] = useState(false);
   const [activeFind, setActiveFind] = useState(null);
   const [showFinds, setShowFinds] = useState(false);
@@ -2889,6 +2904,21 @@ const PostShuffleResultView = ({ deck, matchCount, matchedWithShuffle, matchedPo
   // Replay handler — resets everything in one atomic render, then flips after a beat
   const handleReplay = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Award "Encore" achievement (watch replay)
+    if (!unlockedAchievementIds.has('encore')) {
+      fetch('https://shuffled-production.up.railway.app/api/achievement', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ achievementId: 'encore' }),
+      }).then(() => {
+        setUnlockedAchievementIds(prev => {
+          const next = new Set(prev);
+          next.add('encore');
+          return next;
+        });
+      }).catch(err => console.error('Encore achievement error:', err));
+    }
     // All five state changes batch into ONE React render:
     // New grid mounts with cards face-down, finds/results/replay button hidden
     setIsRevealed(false);
@@ -3731,6 +3761,8 @@ export default function DailyShuffleFinal() {
         totalShuffles={totalShuffles}
         streak={streak}
         matchedPositions={matchedPositions}
+        unlockedAchievementIds={unlockedAchievementIds}
+        setUnlockedAchievementIds={setUnlockedAchievementIds}
       />
       <ProvenancePanel 
         isOpen={showProvenance} 
@@ -3781,6 +3813,8 @@ export default function DailyShuffleFinal() {
             finds={finds}
             isMobile={isMobile}
             matchLocation={matchLocation}
+            unlockedAchievementIds={unlockedAchievementIds}
+            setUnlockedAchievementIds={setUnlockedAchievementIds}
           />
         )}
 
