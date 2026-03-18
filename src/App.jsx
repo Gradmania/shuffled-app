@@ -1038,7 +1038,215 @@ const ProvenancePanel = ({ isOpen, onClose, shuffleHash }) => {
   );
 };
 
+// ============ WHY THIS MATTERS PANEL ============
+const WhyThisMattersPanel = ({ isOpen, onClose }) => {
+  if (!isOpen) return null;
+  
+  return (
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      background: 'rgba(0,0,0,0.85)',
+      backdropFilter: 'blur(10px)',
+      zIndex: 100,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '20px',
+    }}>
+      <div style={{
+        background: 'linear-gradient(180deg, #151528 0%, #0d0d1a 100%)',
+        borderRadius: '24px',
+        width: '100%',
+        maxWidth: '600px',
+        maxHeight: '85vh',
+        overflow: 'auto',
+        border: '1px solid rgba(255,255,255,0.1)',
+      }}>
+        {/* Header */}
+        <div style={{
+          padding: '24px',
+          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          position: 'sticky',
+          top: 0,
+          background: 'linear-gradient(180deg, #151528 0%, #151528 100%)',
+          zIndex: 10,
+        }}>
+          <div>
+            <h2 style={{
+              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontSize: '28px',
+              fontWeight: '400',
+              color: '#fff',
+              margin: 0,
+            }}>
+              Why This Matters
+            </h2>
+            <p style={{
+              fontSize: '13px',
+              color: 'rgba(255,255,255,0.4)',
+              margin: '4px 0 0',
+              fontStyle: 'italic',
+            }}>
+              The impossibility behind the experiment
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
+              border: '1px solid rgba(255,255,255,0.1)',
+              background: 'rgba(255,255,255,0.05)',
+              color: 'rgba(255,255,255,0.5)',
+              fontSize: '18px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            ×
+          </button>
+        </div>
+        
+        <div style={{ padding: '24px' }}>
+          {/* The big number */}
+          <div style={{
+            background: 'rgba(167, 139, 250, 0.08)',
+            border: '1px solid rgba(167, 139, 250, 0.15)',
+            borderRadius: '16px',
+            padding: '20px',
+            marginBottom: '20px',
+          }}>
+            <p style={{
+              fontSize: '14px',
+              color: 'rgba(255,255,255,0.6)',
+              margin: 0,
+              lineHeight: 1.7,
+            }}>
+              52 cards can be arranged in <strong style={{ color: '#a78bfa' }}>8.07 × 10⁶⁷</strong> different 
+              ways. If you dealt one new arrangement every second since the Big Bang, you'd have covered less 
+              than a trillionth of a trillionth of a percent of all possibilities.
+            </p>
+          </div>
 
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {/* Uniqueness */}
+            <div style={{
+              background: 'rgba(255,255,255,0.02)',
+              borderRadius: '16px',
+              padding: '20px',
+              border: '1px solid rgba(255,255,255,0.05)',
+            }}>
+              <div style={{
+                fontSize: '14px',
+                color: '#fb7185',
+                fontWeight: '500',
+                marginBottom: '8px',
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontStyle: 'italic',
+              }}>Every shuffle is unique. Truly.</div>
+              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.45)', margin: 0, lineHeight: 1.7 }}>
+                Your arrangement has never existed before and will never exist again. No matter how many 
+                matches it shares with another shuffle — it is a one-time event in the history of the universe.
+              </p>
+            </div>
+
+            {/* Global comparison */}
+            <div style={{
+              background: 'rgba(255,255,255,0.02)',
+              borderRadius: '16px',
+              padding: '20px',
+              border: '1px solid rgba(255,255,255,0.05)',
+            }}>
+              <div style={{
+                fontSize: '14px',
+                color: '#34d399',
+                fontWeight: '500',
+                marginBottom: '8px',
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontStyle: 'italic',
+              }}>Compared against the world</div>
+              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.45)', margin: 0, lineHeight: 1.7 }}>
+                We compare your 52 cards, position by position, against every shuffle in the database from 
+                people around the world. Even one card landing in the same spot as someone else's shuffle is notable.
+              </p>
+            </div>
+
+            {/* Retroactive */}
+            <div style={{
+              background: 'rgba(255,255,255,0.02)',
+              borderRadius: '16px',
+              padding: '20px',
+              border: '1px solid rgba(255,255,255,0.05)',
+            }}>
+              <div style={{
+                fontSize: '14px',
+                color: '#fbbf24',
+                fontWeight: '500',
+                marginBottom: '8px',
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontStyle: 'italic',
+              }}>It keeps working after you leave</div>
+              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.45)', margin: 0, lineHeight: 1.7 }}>
+                Future shuffles get compared against yours too. Your shuffle may earn new matches days or 
+                weeks from now — and we'll let you know when it does.
+              </p>
+            </div>
+
+            {/* Zero matches */}
+            <div style={{
+              background: 'rgba(255,255,255,0.02)',
+              borderRadius: '16px',
+              padding: '20px',
+              border: '1px solid rgba(255,255,255,0.05)',
+            }}>
+              <div style={{
+                fontSize: '14px',
+                color: 'rgba(255,255,255,0.65)',
+                fontWeight: '500',
+                marginBottom: '8px',
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontStyle: 'italic',
+              }}>Zero matches? That's special.</div>
+              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.45)', margin: 0, lineHeight: 1.7 }}>
+                A shuffle with no matches to anyone is purely, completely unique — even among millions. As the 
+                database grows, zero-match shuffles become the rarest results of all.
+              </p>
+            </div>
+
+            {/* Factory position */}
+            <div style={{
+              background: 'rgba(255,255,255,0.02)',
+              borderRadius: '16px',
+              padding: '20px',
+              border: '1px solid rgba(255,255,255,0.05)',
+            }}>
+              <div style={{
+                fontSize: '14px',
+                color: 'rgba(255,255,255,0.65)',
+                fontWeight: '500',
+                marginBottom: '8px',
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontStyle: 'italic',
+              }}>Cards that remember home</div>
+              <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.45)', margin: 0, lineHeight: 1.7 }}>
+                We also track how many cards land back in their original factory position — the spot they 
+                held in a brand-new deck. Unlike matches, this rarity never changes no matter how many 
+                people shuffle.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // ============ TROPHY CABINET ============
 const TrophyCabinet = ({ isOpen, onClose, isMobile, discoveredFindIds = new Set(), unlockedAchievementIds = new Set() }) => {
@@ -1925,7 +2133,7 @@ const CardZoomOverlay = ({ deck, cardIndex, onClose, matchPositions, tierKey, ma
 };
 
 // ============ FIRST TIME VISITOR VIEW ============
-const FirstTimeView = ({ onShuffle, isShuffling, shuffleHash }) => (
+const FirstTimeView = ({ onShuffle, isShuffling, shuffleHash, onWhyMatters, totalShuffles }) => (
   <div style={{ textAlign: 'center', position: 'relative', zIndex: 1, maxWidth: '520px', padding: '0 20px' }}>
     <div style={{ marginBottom: '32px' }}>
       <FloatingSuits size="large" />
@@ -2006,7 +2214,7 @@ const FirstTimeView = ({ onShuffle, isShuffling, shuffleHash }) => (
         margin: 0,
         lineHeight: 1.6,
       }}>
-        One shuffle per day. Compared against every shuffle before it.
+        One shuffle per day. Compared against every shuffle on Earth.
       </p>
     </div>
 
@@ -2065,13 +2273,30 @@ const FirstTimeView = ({ onShuffle, isShuffling, shuffleHash }) => (
       </button>
     </div>
     
-    {/* Quiet footer context */}
+    {/* Why this matters link + shuffle count */}
     <div style={{
       marginTop: '48px',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
+      gap: '16px',
     }}>
+      <span
+        onClick={onWhyMatters}
+        style={{
+          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          fontSize: '13px',
+          fontStyle: 'italic',
+          color: 'rgba(167, 139, 250, 0.6)',
+          cursor: 'pointer',
+          borderBottom: '1px solid rgba(167, 139, 250, 0.2)',
+          transition: 'all 0.3s ease',
+        }}
+        onMouseEnter={e => { e.target.style.color = 'rgba(167, 139, 250, 0.85)'; e.target.style.borderBottomColor = 'rgba(167, 139, 250, 0.4)'; }}
+        onMouseLeave={e => { e.target.style.color = 'rgba(167, 139, 250, 0.6)'; e.target.style.borderBottomColor = 'rgba(167, 139, 250, 0.2)'; }}
+      >
+        What makes this special? →
+      </span>
       <span style={{
         fontFamily: "'Cormorant Garamond', Georgia, serif",
         fontSize: '12px',
@@ -2079,7 +2304,7 @@ const FirstTimeView = ({ onShuffle, isShuffling, shuffleHash }) => (
         color: 'rgba(255,255,255,0.18)',
         letterSpacing: '1.5px',
       }}>
-        847,293 shuffles and counting
+        {totalShuffles ? totalShuffles.toLocaleString() : '—'} shuffles and counting
       </span>
     </div>
   </div>
@@ -3473,6 +3698,7 @@ export default function DailyShuffleFinal() {
   const [isShuffling, setIsShuffling] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
   const [showProvenance, setShowProvenance] = useState(false);
+  const [showWhyMatters, setShowWhyMatters] = useState(false);
   const [shuffleHash, setShuffleHash] = useState(null);
   const [matchData, setMatchData] = useState(null);
   const [totalShuffles, setTotalShuffles] = useState(0);
@@ -3621,6 +3847,11 @@ export default function DailyShuffleFinal() {
         shuffleHash={shuffleHash}
       />
 
+      <WhyThisMattersPanel
+        isOpen={showWhyMatters}
+        onClose={() => setShowWhyMatters(false)}
+      />
+
       {/* Star field — creates depth in the background */}
       <StarField />
 
@@ -3639,7 +3870,7 @@ export default function DailyShuffleFinal() {
 
       {/* Content — sits above the fixed background layers */}
       <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', minHeight: '100%', flexGrow: 1 }}>
-        {view === 'first-time' && <FirstTimeView onShuffle={handleShuffle} isShuffling={isShuffling} shuffleHash={shuffleHash} />}
+        {view === 'first-time' && <FirstTimeView onShuffle={handleShuffle} isShuffling={isShuffling} shuffleHash={shuffleHash} onWhyMatters={() => setShowWhyMatters(true)} totalShuffles={totalShuffles} />}
         {view === 'returning' && <ReturningUserView onShuffle={handleShuffle} isShuffling={isShuffling} streak={streak} onOpenAchievements={() => setShowAchievements(true)} shuffleHash={shuffleHash} globalHighest={globalHighest} todayHighest={todayHighest} todayShuffles={todayShuffles} userData={userData} unlockedAchievementIds={unlockedAchievementIds} />}
         {view === 'post-shuffle' && (
           <PostShuffleResultView 
