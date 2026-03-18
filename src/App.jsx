@@ -2231,7 +2231,7 @@ const ReturningUserView = ({ onShuffle, isShuffling, streak, onOpenAchievements,
         position: 'relative',
         textShadow: '0 2px 12px rgba(0,0,0,0.4)',
       }}>
-        Never twice. Surely. Your shuffle awaits.
+        A daily experiment in impossibility
       </p>
     </div>
 
@@ -3663,8 +3663,8 @@ export default function DailyShuffleFinal() {
       setMatchData(data.match);
       setTotalShuffles(data.totalShuffles);
       setShuffleNumber(data.shuffle.id);
-      setGlobalHighest(data.globalHighest);
-      setTodayHighest(data.todayHighest);
+      setGlobalHighest(data.globalHighest ? data.globalHighest.count : 0);
+      setTodayHighest(data.todayHighest ? data.todayHighest.count : 0);
       setFactoryCount(data.factoryCount);
       setMatchedPositions(data.match ? data.match.matchedPositions : null);
       setMatchLocation(data.match ? { country: data.match.matchedCountry, city: data.match.matchedCity } : null);
