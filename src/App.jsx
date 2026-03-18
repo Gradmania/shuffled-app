@@ -1363,31 +1363,6 @@ const ShimmerBar = ({ isActive }) => (
   }} />
 );
 
-// Verification Hash Display (shows during/after shuffle)
-const VerificationHash = ({ hash, isVisible }) => (
-  <div style={{
-    opacity: isVisible ? 1 : 0,
-    transform: isVisible ? 'translateY(0)' : 'translateY(-10px)',
-    transition: 'all 0.3s ease',
-    marginBottom: '16px',
-  }}>
-    <div style={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: '8px',
-      padding: '8px 16px',
-      background: 'rgba(251, 191, 36, 0.1)',
-      border: '1px solid rgba(251, 191, 36, 0.2)',
-      borderRadius: '20px',
-    }}>
-      <span style={{ fontSize: '12px' }}>🔒</span>
-      <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)' }}>Verification:</span>
-      <span style={{ fontSize: '11px', color: '#fbbf24', fontFamily: 'monospace' }}>
-        {hash ? `${hash.substring(0, 8)}...${hash.substring(hash.length - 8)}` : '—'}
-      </span>
-    </div>
-  </div>
-);
 
 // ============ MATCH GRID (52-position visualization) ============
 const MatchGrid = ({ matchCount, matchPositions }) => {
@@ -2035,8 +2010,6 @@ const FirstTimeView = ({ onShuffle, isShuffling, shuffleHash }) => (
       </p>
     </div>
 
-    <VerificationHash hash={shuffleHash} isVisible={isShuffling} />
-
     {/* Premium CTA button with elevation */}
     <div style={{ position: 'relative', display: 'inline-block' }}>
       {/* Soft shadow pool beneath button */}
@@ -2242,7 +2215,6 @@ const ReturningUserView = ({ onShuffle, isShuffling, streak, onOpenAchievements,
       </div>
     </div>
 
-    <VerificationHash hash={shuffleHash} isVisible={isShuffling} />
 
     <div style={{ position: 'relative', display: 'inline-block' }}>
       {/* Soft shadow pool beneath button */}
