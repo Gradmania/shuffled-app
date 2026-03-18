@@ -716,7 +716,7 @@ const FloatingSuits = ({ size = 'large' }) => {
 };
 
 // Persistent Header with Streak
-const Header = ({ isFirstTime, streak, showFull = true, onOpenProvenance }) => (
+const Header = ({ isFirstTime, streak, showFull = true, onOpenProvenance, todayShuffles }) => (
   <div style={{
     position: 'fixed',
     top: 0,
@@ -771,7 +771,7 @@ const Header = ({ isFirstTime, streak, showFull = true, onOpenProvenance }) => (
               backgroundColor: '#34d399',
               animation: 'pulse 2s ease-in-out infinite',
             }} />
-            <span style={{ fontSize: '11px', color: '#34d399', fontWeight: '500' }}>2,847 today</span>
+            <span style={{ fontSize: '11px', color: '#34d399', fontWeight: '500' }}>{todayShuffles != null ? `${todayShuffles.toLocaleString()} today` : '— today'}</span>
           </div>
           
           {/* Streak indicator */}
@@ -3762,6 +3762,7 @@ export default function DailyShuffleFinal() {
         streak={streak} 
         showFull={view !== 'first-time'} 
         onOpenProvenance={() => setShowProvenance(true)}
+        todayShuffles={todayShuffles}
       />
       <ViewToggle view={view} setView={setView} />
       <TrophyCabinet isOpen={showAchievements} onClose={() => setShowAchievements(false)} isMobile={isMobile} discoveredFindIds={discoveredFindIds} unlockedAchievementIds={unlockedAchievementIds} />
