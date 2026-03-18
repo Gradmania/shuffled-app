@@ -2845,16 +2845,36 @@ const PostShuffleResultView = ({ deck, matchCount, matchedWithShuffle, matchedPo
   const [liveCount, setLiveCount] = useState(4);
   const [tickerFlash, setTickerFlash] = useState(false);
   
-  // Simulate live shuffle count updates (replace with real WebSocket/polling later)
+  // Poll the live ticker endpoint every 15 seconds
+  const [tickerEntries, setTickerEntries] = useState([]);
   useEffect(() => {
-    const interval = setInterval(() => {
-      setLiveCount(c => {
-        const delta = Math.random() > 0.5 ? 1 : (Math.random() > 0.5 ? 2 : 0);
-        return Math.max(1, c + delta - 1); // Fluctuate naturally
-      });
-      setTickerFlash(true);
-      setTimeout(() => setTickerFlash(false), 600);
-    }, 4000 + Math.random() * 3000);
+    const fetchTicker = () => {
+      fetch('https://shuffled-production.up.railway.app/api/ticker', {
+        credentials: 'include',
+      })
+        .then(res => res.json())
+        .then(data => {
+          const prevCount = liveCount;
+          setLiveCount(data.lastMinuteCount);
+          if (data.lastMinuteCount > prevCount) {
+            setTickerFlash(true);
+            setTimeout(() => setTickerFlash(false), 600);
+          }
+          setTickerEntries(data.recentShuffles.map(entry => {
+            const seconds = Math.round((Date.now() - new Date(entry.timestamp).getTime()) / 1000);
+            const timeAgo = seconds < 60 ? `${seconds}s ago` : `${Math.round(seconds / 60)}m ago`;
+            return {
+              city: entry.city,
+              country: entry.country,
+              matchCount: entry.matchCount,
+              timeAgo,
+            };
+          }));
+        })
+        .catch(err => console.error('Ticker fetch error:', err));
+    };
+    fetchTicker();
+    const interval = setInterval(fetchTicker, 15000);
     return () => clearInterval(interval);
   }, []);
   
@@ -2939,14 +2959,6 @@ const PostShuffleResultView = ({ deck, matchCount, matchedWithShuffle, matchedPo
     }, 350);
   };
   
-  // Simulated live ticker entries (hardcoded — real data comes from backend later)
-  const tickerEntries = useMemo(() => [
-    { city: 'Melbourne', matchCount: 4, timeAgo: '12s ago' },
-    { city: 'London', matchCount: 2, timeAgo: '34s ago' },
-    { city: 'São Paulo', matchCount: 5, timeAgo: '1m ago' },
-    { city: 'Tokyo', matchCount: 3, timeAgo: '2m ago' },
-    { city: 'New York', matchCount: 1, timeAgo: '3m ago' },
-  ], []);
   
   return (
     <div style={{ textAlign: 'center', position: 'relative', zIndex: 1, width: '100%', maxWidth: '800px' }}>
@@ -3430,7 +3442,7 @@ const PostShuffleResultView = ({ deck, matchCount, matchedWithShuffle, matchedPo
                         fontStyle: 'italic',
                         color: 'rgba(255,255,255,0.45)',
                       }}>
-                        Someone in {entry.city} shuffled
+                        {entry.city ? `Someone in ${entry.city} shuffled` : 'Someone shuffled'}
                       </span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <span style={{
