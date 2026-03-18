@@ -3301,7 +3301,11 @@ const PostShuffleResultView = ({ deck, matchCount, matchedWithShuffle, matchedPo
                 </span>
                 <span style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'rgba(255,255,255,0.3)' }} />
                 <span style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: '14px', fontWeight: '600', fontStyle: 'italic', color: 'rgba(255,255,255,0.7)' }}>
-                  Somewhere out there 🌍
+                  {matchLocation && matchLocation.city && matchLocation.country
+                    ? `${matchLocation.city}, ${matchLocation.country} 🌍`
+                    : matchLocation && matchLocation.country
+                    ? `${matchLocation.country} 🌍`
+                    : 'Somewhere out there 🌍'}
                 </span>
               </div>
             </div>
@@ -3600,6 +3604,7 @@ export default function DailyShuffleFinal() {
   const [todayShuffles, setTodayShuffles] = useState(null);
   const [factoryCount, setFactoryCount] = useState(null);
   const [matchedPositions, setMatchedPositions] = useState(null);
+  const [matchLocation, setMatchLocation] = useState(null);
   const [finds, setFinds] = useState([]);
   const [userData, setUserData] = useState(null);
   const [streak, setStreak] = useState(0);
@@ -3666,6 +3671,7 @@ export default function DailyShuffleFinal() {
       setTodayHighest(data.todayHighest);
       setFactoryCount(data.factoryCount);
       setMatchedPositions(data.match ? data.match.matchedPositions : null);
+      setMatchLocation(data.match ? { country: data.match.matchedCountry, city: data.match.matchedCity } : null);
       setFinds(data.finds || []);
       setUserData(data.user || null);
       setStreak(data.user ? data.user.streak : 0);
