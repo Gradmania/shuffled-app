@@ -1127,63 +1127,7 @@ const ProvenancePanel = ({ isOpen, onClose, shuffleHash, dailySeed }) => {
   );
 };
 
-// Achievement Badge Component
-const AchievementBadge = ({ achievement, size = 'medium' }) => {
-  const sizes = {
-    small: { badge: 40, icon: 16, ring: 44 },
-    medium: { badge: 56, icon: 24, ring: 62 },
-    large: { badge: 72, icon: 32, ring: 80 },
-  };
-  const s = sizes[size];
-  
-  return (
-    <div style={{
-      position: 'relative',
-      width: s.ring,
-      height: s.ring,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-    }}>
-      {achievement.unlocked && (
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          borderRadius: '50%',
-          background: achievement.legendary 
-            ? 'conic-gradient(from 0deg, #fbbf24, #fb7185, #a78bfa, #fbbf24)'
-            : 'conic-gradient(from 0deg, #a78bfa, #fb7185, #fbbf24, #34d399, #a78bfa)',
-          animation: 'badgeRotate 4s linear infinite',
-          opacity: achievement.legendary ? 0.9 : 0.6,
-        }} />
-      )}
-      
-      <div style={{
-        width: s.badge,
-        height: s.badge,
-        borderRadius: '50%',
-        background: achievement.unlocked 
-          ? achievement.legendary 
-            ? 'linear-gradient(135deg, #2d2a1a, #1a1a2e)'
-            : 'linear-gradient(135deg, #1a1a2e, #252542)' 
-          : 'linear-gradient(135deg, #0d0d1a, #151528)',
-        border: achievement.unlocked 
-          ? 'none' 
-          : '2px dashed rgba(255,255,255,0.1)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: s.icon,
-        filter: achievement.unlocked ? 'none' : 'grayscale(100%)',
-        opacity: achievement.unlocked ? 1 : 0.4,
-        position: 'relative',
-        zIndex: 1,
-      }}>
-        {achievement.unlocked ? achievement.icon : '🔒'}
-      </div>
-    </div>
-  );
-};
+
 
 // ============ TROPHY CABINET ============
 const TrophyCabinet = ({ isOpen, onClose, isMobile, discoveredFindIds = new Set(), unlockedAchievementIds = new Set() }) => {
@@ -2258,7 +2202,7 @@ const FirstTimeView = ({ onShuffle, isShuffling, shuffleHash }) => (
 );
 
 // ============ RETURNING USER VIEW ============
-const ReturningUserView = ({ onShuffle, isShuffling, streak, onOpenAchievements, shuffleHash, globalHighest, todayHighest, todayShuffles, userData }) => (
+const ReturningUserView = ({ onShuffle, isShuffling, streak, onOpenAchievements, shuffleHash, globalHighest, todayHighest, todayShuffles, userData, unlockedAchievementIds = new Set() }) => (
   <div style={{ textAlign: 'center', position: 'relative', zIndex: 1, maxWidth: '700px', padding: '0 20px' }}>
     <div style={{ marginBottom: '16px' }}>
       <FloatingSuits size="medium" />
@@ -2356,18 +2300,27 @@ const ReturningUserView = ({ onShuffle, isShuffling, streak, onOpenAchievements,
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ display: 'flex' }}>
-            {ACHIEVEMENTS.filter(a => a.unlocked).slice(0, 5).map((a, i) => (
-              <div key={a.id} style={{ marginLeft: i > 0 ? '-8px' : 0, zIndex: 5 - i }}>
-                <AchievementBadge achievement={a} size="small" />
-              </div>
-            ))}
+            {TROPHY_ACHIEVEMENTS.filter(a => unlockedAchievementIds.has(a.id)).slice(0, 5).map((a, i) => {
+              const AchIcon = a.Icon;
+              return (
+                <div key={a.id} style={{
+                  marginLeft: i > 0 ? '-8px' : 0, zIndex: 5 - i,
+                  width: 36, height: 36, borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #1a1a2e, #252542)',
+                  border: '1px solid rgba(167, 139, 250, 0.25)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <AchIcon size={16} color="#a78bfa" />
+                </div>
+              );
+            })}
           </div>
           <span style={{
             fontFamily: "'Cormorant Garamond', Georgia, serif",
             fontSize: '13px',
             color: 'rgba(255,255,255,0.5)',
           }}>
-            {ACHIEVEMENTS.filter(a => a.unlocked).length} of {ACHIEVEMENTS.length} achievements
+            {unlockedAchievementIds.size} of {TROPHY_ACHIEVEMENTS.length} achievements
           </span>
         </div>
         <span style={{
@@ -3805,7 +3758,7 @@ export default function DailyShuffleFinal() {
       {/* Content — sits above the fixed background layers */}
       <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', minHeight: '100%', flexGrow: 1 }}>
         {view === 'first-time' && <FirstTimeView onShuffle={handleShuffle} isShuffling={isShuffling} shuffleHash={shuffleHash} />}
-        {view === 'returning' && <ReturningUserView onShuffle={handleShuffle} isShuffling={isShuffling} streak={streak} onOpenAchievements={() => setShowAchievements(true)} shuffleHash={shuffleHash} globalHighest={globalHighest} todayHighest={todayHighest} todayShuffles={todayShuffles} userData={userData} />}
+        {view === 'returning' && <ReturningUserView onShuffle={handleShuffle} isShuffling={isShuffling} streak={streak} onOpenAchievements={() => setShowAchievements(true)} shuffleHash={shuffleHash} globalHighest={globalHighest} todayHighest={todayHighest} todayShuffles={todayShuffles} userData={userData} unlockedAchievementIds={unlockedAchievementIds} />}
         {view === 'post-shuffle' && (
           <PostShuffleResultView 
             deck={deck} 
