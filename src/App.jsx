@@ -2501,7 +2501,7 @@ const ShareCardMatchGrid = ({ matchCount, matchedPositions }) => {
   );
 };
 
-const ShareCard = ({ matchCount, matchedWithShuffle, shuffleNumber, totalShuffles, streak, matchedPositions }) => {
+const ShareCard = ({ matchCount, matchedWithShuffle, shuffleNumber, totalShuffles, streak, matchedPositions, matchLocation }) => {
   const tierKey = getTierForMatch(matchCount);
   const tier = RARITY_TIERS[tierKey];
   const odds = getOddsForMatch(matchCount);
@@ -2583,7 +2583,7 @@ const ShareCard = ({ matchCount, matchedWithShuffle, shuffleNumber, totalShuffle
       <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'8px', marginBottom:'16px', position:'relative' }}>
         <div style={{ width:'260px', padding:'10px 16px', borderRadius:'10px', background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.07)', display:'flex', alignItems:'center', justifyContent:'center' }}>
           <span style={{ fontSize:'12px', color: tier.isGradient ? '#fbbf24' : tier.color, fontWeight:'600' }}>Matched with #{matchedWithShuffle ? matchedWithShuffle.toLocaleString() : '—'}</span>
-          <span style={{ fontSize:'12px', color:'rgba(255,255,255,0.4)' }}>&nbsp;from {totalShuffles ? totalShuffles.toLocaleString() : '—'} shuffles</span>
+          <span style={{ fontSize:'12px', color:'rgba(255,255,255,0.4)' }}>&nbsp;{matchLocation && matchLocation.city ? `from ${matchLocation.city}` : `from ${totalShuffles ? totalShuffles.toLocaleString() : '—'} shuffles`}</span>
         </div>
         {streak > 0 && (
           <div style={{ width:'260px', padding:'10px 16px', borderRadius:'10px', background:'rgba(251, 113, 133, 0.1)', border:'1px solid rgba(251, 113, 133, 0.2)', display:'flex', alignItems:'center', justifyContent:'center', gap:'6px' }}>
@@ -2611,7 +2611,7 @@ const ShareCard = ({ matchCount, matchedWithShuffle, shuffleNumber, totalShuffle
 // Overlay when you tap "Share Result."
 // Contains the share card + action buttons (Share / Copy / Download).
 
-const ShareModal = ({ isOpen, onClose, matchCount, matchedWithShuffle, shuffleNumber, totalShuffles, streak, matchedPositions, unlockedAchievementIds = new Set(), setUnlockedAchievementIds }) => {
+const ShareModal = ({ isOpen, onClose, matchCount, matchedWithShuffle, shuffleNumber, totalShuffles, streak, matchedPositions, unlockedAchievementIds = new Set(), setUnlockedAchievementIds, matchLocation }) => {
   const cardRef = useRef(null);
   const [copying, setCopying] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -2776,6 +2776,7 @@ const ShareModal = ({ isOpen, onClose, matchCount, matchedWithShuffle, shuffleNu
           totalShuffles={totalShuffles}
           streak={streak}
           matchedPositions={matchedPositions}
+          matchLocation={matchLocation}
         />
       </div>
       
@@ -3775,6 +3776,7 @@ export default function DailyShuffleFinal() {
         matchedPositions={matchedPositions}
         unlockedAchievementIds={unlockedAchievementIds}
         setUnlockedAchievementIds={setUnlockedAchievementIds}
+        matchLocation={matchLocation}
       />
       <ProvenancePanel 
         isOpen={showProvenance} 
